@@ -1,0 +1,1319 @@
+/* ============================================
+   Samaj Card Maker — Master Stylesheet
+   अखिल भारतीय माहौर ग्वारे वैश्य महासभा
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+Devanagari:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;800;900&display=swap');
+
+/* ---- CSS Variables ---- */
+:root {
+    --saffron: #FF9933;
+    --saffron-dark: #e8841a;
+    --green: #138808;
+    --green-dark: #0d6b06;
+    --navy: #000080;
+    --blue-light: #b3d9ff;
+    --blue-card: #87CEEB;
+    --blue-header: #4dc9f6;
+    --gold: #d4a843;
+    --gold-light: #f0d68a;
+    --cream: #FFF8E7;
+    --white: #ffffff;
+    --black: #1a1a1a;
+    --gray-100: #f7f7f7;
+    --gray-200: #e5e5e5;
+    --gray-300: #d4d4d4;
+    --gray-500: #737373;
+    --gray-700: #404040;
+    --gray-900: #171717;
+    --red: #dc2626;
+    --red-border: #cc0000;
+
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 20px;
+    --radius-xl: 28px;
+
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.15);
+    --shadow-lg: 0 8px 30px rgba(0,0,0,0.2);
+    --shadow-xl: 0 20px 60px rgba(0,0,0,0.3);
+
+    --font-hindi: 'Noto Sans Devanagari', sans-serif;
+    --font-english: 'Inter', sans-serif;
+    --font-display: 'Playfair Display', serif;
+}
+
+/* ---- Reset ---- */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: var(--font-english);
+    background: linear-gradient(135deg, #0f0c29 0%, #1a1040 30%, #24243e 60%, #0f0c29 100%);
+    color: var(--white);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* ---- Animated Background ---- */
+.bg-particles {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.bg-particles::before,
+.bg-particles::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.15;
+    animation: float 20s ease-in-out infinite;
+}
+
+.bg-particles::before {
+    width: 600px;
+    height: 600px;
+    background: var(--saffron);
+    top: -200px;
+    right: -100px;
+}
+
+.bg-particles::after {
+    width: 500px;
+    height: 500px;
+    background: var(--green);
+    bottom: -200px;
+    left: -100px;
+    animation-delay: -10s;
+}
+
+@keyframes float {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(30px, -40px) scale(1.1); }
+    50% { transform: translate(-20px, 20px) scale(0.95); }
+    75% { transform: translate(40px, 30px) scale(1.05); }
+}
+
+/* ---- Main Container ---- */
+.main-container {
+    position: relative;
+    z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* ---- Header / Hero ---- */
+.hero {
+    text-align: center;
+    padding: 40px 20px 30px;
+}
+
+.hero-logo {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--gold);
+    box-shadow: 0 0 30px rgba(212, 168, 67, 0.4);
+    margin-bottom: 16px;
+    animation: glow 3s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+    from { box-shadow: 0 0 20px rgba(212, 168, 67, 0.3); }
+    to { box-shadow: 0 0 40px rgba(212, 168, 67, 0.6); }
+}
+
+.hero h1 {
+    font-family: var(--font-hindi);
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--saffron);
+    text-shadow: 0 2px 10px rgba(255, 153, 51, 0.3);
+    line-height: 1.4;
+}
+
+.hero h2 {
+    font-family: var(--font-english);
+    font-size: 0.95rem;
+    font-weight: 400;
+    color: var(--gray-300);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 4px;
+}
+
+.hero .reg-no {
+    font-size: 0.8rem;
+    color: var(--gold);
+    margin-top: 6px;
+    font-weight: 500;
+}
+
+.hero .subtitle {
+    font-size: 1.1rem;
+    color: var(--blue-light);
+    margin-top: 16px;
+    font-weight: 300;
+}
+
+.hero .matdan-badge {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 6px 24px;
+    background: linear-gradient(135deg, var(--saffron), var(--gold));
+    color: var(--black);
+    border-radius: 30px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+/* ---- Glass Panel ---- */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    margin-bottom: 30px;
+}
+
+.glass-panel h3 {
+    font-family: var(--font-hindi);
+    font-size: 1.3rem;
+    color: var(--saffron);
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ---- Form Styles ---- */
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--gray-300);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.form-group input,
+.form-group select {
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-sm);
+    color: var(--white);
+    font-size: 1rem;
+    font-family: var(--font-english);
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    border-color: var(--saffron);
+    box-shadow: 0 0 0 3px rgba(255, 153, 51, 0.15);
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.form-group input::placeholder {
+    color: var(--gray-500);
+}
+
+.form-group select option {
+    background: #1a1040;
+    color: var(--white);
+}
+
+/* Photo Upload */
+.photo-upload-area {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 2px dashed rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.photo-upload-area:hover {
+    border-color: var(--saffron);
+    background: rgba(255, 153, 51, 0.05);
+}
+
+.photo-preview {
+    width: 100px;
+    height: 120px;
+    border-radius: var(--radius-sm);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.photo-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.photo-preview .placeholder-icon {
+    font-size: 2.5rem;
+    color: var(--gray-500);
+}
+
+.photo-upload-text h4 {
+    color: var(--white);
+    font-size: 1rem;
+    margin-bottom: 4px;
+}
+
+.photo-upload-text p {
+    color: var(--gray-500);
+    font-size: 0.85rem;
+}
+
+.photo-upload-area input[type="file"] {
+    display: none;
+}
+
+/* ---- Generate Button ---- */
+.btn-generate {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    margin-top: 10px;
+    background: linear-gradient(135deg, var(--saffron), #ff6b00);
+    color: var(--white);
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-generate::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.btn-generate:hover::before {
+    left: 100%;
+}
+
+.btn-generate:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(255, 153, 51, 0.4);
+}
+
+.btn-generate:active {
+    transform: translateY(0);
+}
+
+.btn-generate:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ---- Card Preview Section ---- */
+.card-section {
+    display: none;
+    text-align: center;
+}
+
+.card-section.visible {
+    display: block;
+    animation: fadeInUp 0.6s ease;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.card-section h3 {
+    font-family: var(--font-hindi);
+    font-size: 1.3rem;
+    color: var(--saffron);
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+.card-flip-container {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+    margin-bottom: 30px;
+}
+
+/* ============================================
+   CARD DESIGN — Front Side
+   Matches the physical card exactly
+   ============================================ */
+.id-card {
+    width: 500px;
+    height: 310px;
+    border-radius: 14px;
+    overflow: hidden;
+    position: relative;
+    background: linear-gradient(180deg, #ffffff 0%, #f5f9ff 100%);
+    box-shadow: var(--shadow-xl);
+    font-family: var(--font-english);
+    color: var(--black);
+}
+
+/* Top header band with blue gradient + wave */
+.card-header {
+    position: relative;
+    background: linear-gradient(135deg, #3bb8e0 0%, #7dd6f5 40%, #a8e6ff 100%);
+    height: 88px;
+    padding: 8px 16px 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    overflow: hidden;
+}
+
+/* Wave SVG at bottom of header */
+.card-header::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 35px;
+    background: var(--white);
+    clip-path: ellipse(55% 100% at 50% 100%);
+}
+
+.card-header .logo-left {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--white);
+    z-index: 1;
+    flex-shrink: 0;
+    margin-top: 4px;
+}
+
+.card-header .header-center {
+    flex: 1;
+    text-align: center;
+    z-index: 1;
+    padding: 0 8px;
+}
+
+.card-header .reg-no {
+    font-size: 0.52rem;
+    color: #1a4a6b;
+    text-align: right;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.card-header .org-name-hindi {
+    font-family: var(--font-hindi);
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #1a2d5a;
+    line-height: 1.3;
+}
+
+.card-header .org-name-english {
+    font-size: 0.55rem;
+    font-weight: 500;
+    color: #2a4a7a;
+    letter-spacing: 0.5px;
+    font-style: italic;
+}
+
+.card-header .logo-right {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    z-index: 1;
+    flex-shrink: 0;
+    margin-top: 6px;
+}
+
+/* Member type */
+.card-member-type {
+    text-align: center;
+    margin-top: -8px;
+    position: relative;
+    z-index: 2;
+}
+
+.card-member-type span {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--green);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+/* Card body with details + photo */
+.card-body {
+    display: flex;
+    padding: 8px 20px 4px;
+    position: relative;
+}
+
+.card-details {
+    flex: 1;
+    text-align: left;
+}
+
+.card-details .member-name {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: var(--black);
+    text-transform: uppercase;
+    margin-bottom: 1px;
+}
+
+.card-details .father-name {
+    font-size: 0.65rem;
+    color: var(--gray-700);
+    margin-bottom: 2px;
+}
+
+.card-details .phone-number {
+    font-size: 0.65rem;
+    color: var(--gray-700);
+    margin-bottom: 4px;
+}
+
+.card-details .city-state {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--black);
+    text-transform: uppercase;
+    line-height: 1.3;
+}
+
+/* Watermark in center */
+.card-watermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px;
+    height: 80px;
+    opacity: 0.08;
+    pointer-events: none;
+}
+
+/* Photo area */
+.card-photo-frame {
+    width: 85px;
+    height: 100px;
+    border: 2px solid var(--red-border);
+    overflow: hidden;
+    flex-shrink: 0;
+    margin-left: 10px;
+}
+
+.card-photo-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Bottom band */
+.card-footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, #3bb8e0 0%, #7dd6f5 50%, #a8e6ff 100%);
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    overflow: hidden;
+}
+
+.card-footer::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: 0;
+    width: 100%;
+    height: 12px;
+    background: var(--white);
+    clip-path: ellipse(55% 100% at 50% 0%);
+}
+
+.card-footer .membership-no {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--red);
+    z-index: 1;
+}
+
+.card-footer .membership-no span {
+    font-size: 0.85rem;
+    color: var(--black);
+    font-weight: 800;
+}
+
+.card-footer .issuing-date {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--red);
+    z-index: 1;
+}
+
+.card-footer .issuing-date span {
+    font-size: 0.72rem;
+    color: var(--black);
+    font-weight: 700;
+}
+
+
+/* ============================================
+   CARD DESIGN — Back Side
+   ============================================ */
+.id-card-back {
+    width: 500px;
+    height: 310px;
+    border-radius: 14px;
+    overflow: hidden;
+    position: relative;
+    background: linear-gradient(180deg, #ffffff 0%, #f5f9ff 100%);
+    box-shadow: var(--shadow-xl);
+    font-family: var(--font-english);
+    color: var(--black);
+}
+
+.card-back-header {
+    position: relative;
+    background: linear-gradient(135deg, #3bb8e0 0%, #7dd6f5 40%, #a8e6ff 100%);
+    height: 72px;
+    padding: 6px 16px 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    overflow: hidden;
+}
+
+.card-back-header::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 30px;
+    background: var(--white);
+    clip-path: ellipse(55% 100% at 50% 100%);
+}
+
+.card-back-header .logo-left {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--white);
+    z-index: 1;
+    flex-shrink: 0;
+    margin-top: 3px;
+}
+
+.card-back-header .header-center {
+    flex: 1;
+    text-align: center;
+    z-index: 1;
+    padding: 0 6px;
+}
+
+.card-back-header .reg-no {
+    font-size: 0.48rem;
+    color: #1a4a6b;
+    text-align: right;
+    font-weight: 600;
+    margin-bottom: 1px;
+}
+
+.card-back-header .org-name-hindi {
+    font-family: var(--font-hindi);
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: #1a2d5a;
+    line-height: 1.3;
+}
+
+.card-back-header .org-name-english {
+    font-size: 0.48rem;
+    font-weight: 500;
+    color: #2a4a7a;
+    letter-spacing: 0.5px;
+    font-style: italic;
+}
+
+.card-back-header .logo-right {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    z-index: 1;
+    flex-shrink: 0;
+    margin-top: 4px;
+}
+
+/* Signature boxes */
+.signature-section {
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 20px 6px;
+    position: relative;
+}
+
+.signature-box {
+    background: rgba(135, 206, 235, 0.15);
+    border: 1px solid rgba(135, 206, 235, 0.4);
+    border-radius: 6px;
+    padding: 8px 14px;
+    text-align: center;
+    width: 42%;
+}
+
+.signature-box .sig-title {
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: var(--black);
+    margin-bottom: 12px;
+}
+
+.signature-box .sig-line {
+    width: 80%;
+    height: 1px;
+    background: var(--gray-500);
+    margin: 0 auto 4px;
+}
+
+.signature-box .sig-name {
+    font-size: 0.55rem;
+    font-weight: 600;
+    color: var(--gray-700);
+}
+
+.signature-box .sig-designation {
+    font-size: 0.5rem;
+    color: var(--gray-500);
+    font-weight: 500;
+}
+
+/* Back watermark */
+.card-back-watermark {
+    position: absolute;
+    top: 42%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    opacity: 0.06;
+    pointer-events: none;
+}
+
+/* Instructions section */
+.card-instructions {
+    padding: 6px 20px;
+    border-top: 1px solid var(--gray-200);
+}
+
+.card-instructions h5 {
+    font-size: 0.6rem;
+    font-weight: 800;
+    margin-bottom: 3px;
+}
+
+.card-instructions p {
+    font-size: 0.45rem;
+    color: var(--gray-700);
+    line-height: 1.4;
+}
+
+/* Back footer / contact */
+.card-back-footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, #3bb8e0, #a8e6ff);
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    overflow: hidden;
+}
+
+.card-back-footer::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: 0;
+    width: 100%;
+    height: 10px;
+    background: var(--white);
+    clip-path: ellipse(55% 100% at 50% 0%);
+}
+
+.card-back-footer .contact-item {
+    font-size: 0.5rem;
+    font-weight: 600;
+    color: var(--black);
+    z-index: 1;
+}
+
+.card-back-footer .contact-item span {
+    font-weight: 400;
+}
+
+/* QR Code on back */
+.card-qr {
+    position: absolute;
+    bottom: 38px;
+    right: 16px;
+    width: 50px;
+    height: 50px;
+}
+
+.card-qr canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+
+/* ---- Download Buttons ---- */
+.download-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+
+.btn-download {
+    padding: 14px 32px;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn-download.png {
+    background: linear-gradient(135deg, var(--green), #2dd65b);
+    color: var(--white);
+}
+
+.btn-download.pdf {
+    background: linear-gradient(135deg, #dc2626, #f43f5e);
+    color: var(--white);
+}
+
+.btn-download.edit {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: var(--white);
+}
+
+.btn-download:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.btn-download .icon {
+    font-size: 1.2rem;
+}
+
+
+/* ---- Admin Link ---- */
+.admin-link {
+    text-align: center;
+    margin-top: 40px;
+    padding-bottom: 40px;
+}
+
+.admin-link a {
+    color: var(--gray-500);
+    text-decoration: none;
+    font-size: 0.8rem;
+    transition: color 0.3s;
+}
+
+.admin-link a:hover {
+    color: var(--saffron);
+}
+
+
+/* ============================================
+   ADMIN PAGE STYLES
+   ============================================ */
+
+/* Admin login gate */
+.admin-gate {
+    max-width: 420px;
+    margin: 100px auto;
+    text-align: center;
+}
+
+.admin-gate h2 {
+    font-family: var(--font-hindi);
+    color: var(--saffron);
+    font-size: 1.6rem;
+    margin-bottom: 8px;
+}
+
+.admin-gate p {
+    color: var(--gray-500);
+    margin-bottom: 24px;
+}
+
+.admin-gate input {
+    width: 100%;
+    padding: 14px 18px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-sm);
+    color: var(--white);
+    font-size: 1rem;
+    text-align: center;
+    letter-spacing: 4px;
+    outline: none;
+    margin-bottom: 16px;
+}
+
+.admin-gate input:focus {
+    border-color: var(--saffron);
+    box-shadow: 0 0 0 3px rgba(255, 153, 51, 0.15);
+}
+
+.admin-gate .btn-login {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, var(--saffron), #ff6b00);
+    color: var(--white);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.admin-gate .btn-login:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(255, 153, 51, 0.4);
+}
+
+.admin-gate .error-msg {
+    color: var(--red);
+    font-size: 0.85rem;
+    margin-top: 10px;
+    display: none;
+}
+
+/* Admin Dashboard */
+.admin-dashboard {
+    display: none;
+}
+
+.admin-dashboard.visible {
+    display: block;
+    animation: fadeInUp 0.5s ease;
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.admin-header h2 {
+    font-family: var(--font-hindi);
+    color: var(--saffron);
+    font-size: 1.5rem;
+}
+
+.admin-stats {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    padding: 16px 24px;
+    text-align: center;
+    min-width: 140px;
+}
+
+.stat-card .stat-number {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--saffron);
+}
+
+.stat-card .stat-label {
+    font-size: 0.75rem;
+    color: var(--gray-500);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Search bar */
+.search-bar {
+    margin-bottom: 20px;
+}
+
+.search-bar input {
+    width: 100%;
+    padding: 12px 18px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-sm);
+    color: var(--white);
+    font-size: 0.95rem;
+    outline: none;
+}
+
+.search-bar input:focus {
+    border-color: var(--saffron);
+}
+
+/* Members table */
+.members-table-wrap {
+    overflow-x: auto;
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.members-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.members-table thead {
+    background: rgba(255, 153, 51, 0.15);
+}
+
+.members-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 700;
+    color: var(--saffron);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.7rem;
+    white-space: nowrap;
+}
+
+.members-table td {
+    padding: 10px 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    color: var(--gray-200);
+    white-space: nowrap;
+}
+
+.members-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.members-table .member-photo-thumb {
+    width: 36px;
+    height: 44px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-view {
+    padding: 6px 14px;
+    background: rgba(255, 153, 51, 0.2);
+    color: var(--saffron);
+    border: 1px solid rgba(255, 153, 51, 0.3);
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-view:hover {
+    background: rgba(255, 153, 51, 0.3);
+}
+
+.btn-export {
+    padding: 10px 24px;
+    background: rgba(19, 136, 8, 0.2);
+    color: var(--green);
+    border: 1px solid rgba(19, 136, 8, 0.3);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-export:hover {
+    background: rgba(19, 136, 8, 0.3);
+}
+
+.btn-logout {
+    padding: 10px 24px;
+    background: rgba(220, 38, 38, 0.2);
+    color: var(--red);
+    border: 1px solid rgba(220, 38, 38, 0.3);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-logout:hover {
+    background: rgba(220, 38, 38, 0.3);
+}
+
+/* Modal for viewing card */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.modal-overlay.visible {
+    display: flex;
+}
+
+.modal-content {
+    background: #1a1040;
+    border-radius: var(--radius-lg);
+    padding: 30px;
+    max-width: 580px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-close {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    background: none;
+    border: none;
+    color: var(--gray-500);
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.modal-close:hover {
+    color: var(--white);
+}
+
+
+/* ---- Loading spinner ---- */
+.spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: var(--white);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ---- Toast notifications ---- */
+.toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: rgba(30, 30, 60, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    padding: 16px 24px;
+    color: var(--white);
+    font-size: 0.9rem;
+    z-index: 2000;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.4s ease;
+    max-width: 360px;
+}
+
+.toast.visible {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.toast.success {
+    border-left: 4px solid var(--green);
+}
+
+.toast.error {
+    border-left: 4px solid var(--red);
+}
+
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .hero h1 {
+        font-size: 1.4rem;
+    }
+
+    .id-card,
+    .id-card-back {
+        width: 100%;
+        max-width: 500px;
+        height: auto;
+        aspect-ratio: 500 / 310;
+    }
+
+    .card-flip-container {
+        gap: 20px;
+    }
+
+    .glass-panel {
+        padding: 20px;
+    }
+
+    .photo-upload-area {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .admin-header {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .download-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .btn-download {
+        width: 100%;
+        max-width: 300px;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 520px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .hero {
+        padding: 30px 10px 20px;
+    }
+
+    .card-header .org-name-hindi,
+    .card-back-header .org-name-hindi {
+        font-size: 0.7rem;
+    }
+
+    .card-details .member-name {
+        font-size: 0.7rem;
+    }
+}
+
+/* ---- Print styles for card capture ---- */
+.card-render-area {
+    position: absolute;
+    left: -9999px;
+    top: -9999px;
+}

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel | अखिल भारतीय माहौर ग्वारे वैश्य महासभा</title>
+    <meta name="description" content="Admin Dashboard - Akhil Bhartiya Mahour Gware Vaishya Mahasabha Card Management Panel">
+    <link rel="stylesheet" href="style.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <!-- html2canvas for image capture -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- jsPDF for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- QRCode.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+
+    <!-- Animated Background -->
+    <div class="bg-particles"></div>
+
+    <div class="main-container">
+
+        <!-- ===== LOGIN GATE ===== -->
+        <section class="glass-panel admin-gate" id="adminGate">
+            <img src="assets/logo-badge.png" alt="Logo" class="hero-logo" style="margin-bottom: 20px;">
+            <h2>🔐 एडमिन पैनल</h2>
+            <p>Enter the admin password to access the dashboard</p>
+            <input type="password" id="adminPassword" placeholder="••••••••" autocomplete="off">
+            <button class="btn-login" id="btnLogin" onclick="attemptLogin()">
+                प्रवेश करें — Enter
+            </button>
+            <div class="error-msg" id="loginError">❌ गलत पासवर्ड! Incorrect password.</div>
+        </section>
+
+        <!-- ===== ADMIN DASHBOARD ===== -->
+        <section class="admin-dashboard" id="adminDashboard">
+
+            <!-- Header -->
+            <div class="admin-header">
+                <div>
+                    <h2>📊 एडमिन डैशबोर्ड — Admin Dashboard</h2>
+                    <p style="color: var(--gray-500); font-size: 0.85rem; margin-top: 4px;">
+                        अखिल भारतीय माहौर ग्वारे वैश्य महासभा (पंजीकृत)
+                    </p>
+                </div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn-export" id="btnExport" onclick="exportCSV()">📥 Export CSV</button>
+                    <a href="index.html" style="text-decoration: none;">
+                        <button class="btn-export">🏠 Home</button>
+                    </a>
+                    <button class="btn-logout" onclick="logout()">🚪 Logout</button>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="admin-stats" id="adminStats">
+                <div class="stat-card">
+                    <div class="stat-number" id="statTotal">0</div>
+                    <div class="stat-label">Total Members</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="statToday">0</div>
+                    <div class="stat-label">Today</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="statStates">0</div>
+                    <div class="stat-label">States</div>
+                </div>
+            </div>
+
+            <!-- Search -->
+            <div class="search-bar" style="margin-top: 24px;">
+                <input type="text" id="searchInput" placeholder="🔍 Search by name, phone, city, or membership no..." oninput="filterMembers()">
+            </div>
+
+            <!-- Members Table -->
+            <div class="glass-panel" style="padding: 0; overflow: hidden;">
+                <div class="members-table-wrap">
+                    <table class="members-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Photo</th>
+                                <th>Name</th>
+                                <th>Father's Name</th>
+                                <th>Phone</th>
+                                <th>Aadhaar</th>
+                                <th>City</th>
+                                <th>State</th>
+                                <th>Member No.</th>
+                                <th>Date</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="membersTableBody">
+                            <tr>
+                                <td colspan="11" style="text-align: center; padding: 40px; color: var(--gray-500);">
+                                    <span class="spinner"></span> Loading members...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Back link -->
+        <div class="admin-link" style="margin-top: 30px;">
+            <a href="index.html">← Back to Card Maker</a>
+        </div>
+
+    </div>
+
+    <!-- Modal for viewing member details -->
+    <div class="modal-overlay" id="memberModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">✕</button>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- Hidden card template for rendering/downloading -->
+    <div class="card-render-area" id="renderArea">
+        <div class="id-card" id="cardFront">
+            <div class="card-header">
+                <img src="assets/logo-main.png" alt="Logo" class="logo-left">
+                <div class="header-center">
+                    <div class="reg-no">Reg. No. : S/3369/SDM/NW/2018</div>
+                    <div class="org-name-hindi">अखिल भारतीय माहौर ग्वारे वैश्य महासभा</div>
+                    <div class="org-name-english">Akhil Bhartiya Mahour Gware Vaishya Mahasabha</div>
+                </div>
+                <svg class="logo-right" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="40" cy="40" r="38" stroke="#1a2d5a" stroke-width="2" fill="rgba(26,45,90,0.1)"/>
+                    <line x1="40" y1="12" x2="40" y2="60" stroke="#1a2d5a" stroke-width="2"/>
+                    <line x1="20" y1="24" x2="60" y2="24" stroke="#1a2d5a" stroke-width="2"/>
+                    <text x="40" y="53" text-anchor="middle" font-size="11" fill="#1a2d5a" font-family="serif" font-weight="bold">ॐ</text>
+                </svg>
+            </div>
+            <div class="card-member-type"><span>General Member</span></div>
+            <div class="card-body">
+                <div class="card-details">
+                    <div class="member-name" id="cardName">—</div>
+                    <div class="father-name" id="cardFather">S/o. Shri —</div>
+                    <div class="phone-number" id="cardPhone">+91 —</div>
+                    <div class="city-state">
+                        <div id="cardCity">—</div>
+                        <div id="cardState">—</div>
+                    </div>
+                </div>
+                <div class="card-photo-frame"><img id="cardPhoto" src="" alt="Member Photo"></div>
+            </div>
+            <div class="card-footer">
+                <div class="membership-no">Membership No. : <span id="cardMemberNo">—</span></div>
+                <div class="issuing-date">Issuing Date : <span id="cardDate">—</span></div>
+            </div>
+        </div>
+
+        <div class="id-card-back" id="cardBack">
+            <div class="card-back-header">
+                <img src="assets/logo-main.png" alt="Logo" class="logo-left">
+                <div class="header-center">
+                    <div class="reg-no">Reg. No. : S/3369/SDM/NW/2018</div>
+                    <div class="org-name-hindi">अखिल भारतीय माहौर ग्वारे वैश्य महासभा</div>
+                    <div class="org-name-english">Akhil Bhartiya Mahour Gware Vaishya Mahasabha</div>
+                </div>
+                <svg class="logo-right" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="40" cy="40" r="38" stroke="#1a2d5a" stroke-width="2" fill="rgba(26,45,90,0.1)"/>
+                    <text x="40" y="53" text-anchor="middle" font-size="11" fill="#1a2d5a" font-family="serif" font-weight="bold">ॐ</text>
+                </svg>
+            </div>
+            <div class="signature-section">
+                <div class="signature-box">
+                    <div class="sig-title">Auth. Signature</div>
+                    <div class="sig-line"></div>
+                    <div class="sig-name">(Meena Gupta)</div>
+                    <div class="sig-designation">National Secretary</div>
+                </div>
+                <div class="signature-box">
+                    <div class="sig-title">Auth. Signature</div>
+                    <div class="sig-line"></div>
+                    <div class="sig-name">(Prakash Chandra Mandil)</div>
+                    <div class="sig-designation">National President</div>
+                </div>
+            </div>
+            <div class="card-instructions">
+                <h5>Instruction :</h5>
+                <p>This card is property of Akhil Bhartiya Mahour Gware Vaishya Mahasabha and is nontransferable.</p>
+            </div>
+            <div class="card-qr" id="cardQR"></div>
+            <div class="card-back-footer">
+                <div class="contact-item">📞 President - <span>9826654877</span></div>
+                <div class="contact-item">📞 Media Prabhari - <span>9893167002</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notification -->
+    <div class="toast" id="toast"></div>
+
+    <script src="firebase-config.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>सदस्यता कार्ड | अखिल भारतीय माहौर ग्वारे वैश्य महासभा</title>
+    <meta name="description" content="अखिल भारतीय माहौर ग्वारे वैश्य महासभा (पंजीकृत) - सदस्यता कार्ड बनाएं। Akhil Bhartiya Mahour Gware Vaishya Mahasabha Membership Card Generator.">
+    <link rel="stylesheet" href="style.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <!-- html2canvas for image capture -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- jsPDF for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- QRCode.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+
+    <!-- Animated Background -->
+    <div class="bg-particles"></div>
+
+    <div class="main-container">
+
+        <!-- ===== HERO SECTION ===== -->
+        <section class="hero">
+            <img src="assets/logo-badge.png" alt="महासेन लोगो" class="hero-logo" id="heroLogo">
+            <h1>अखिल भारतीय माहौर ग्वारे वैश्य महासभा</h1>
+            <h2>Akhil Bhartiya Mahour Gware Vaishya Mahasabha</h2>
+            <p class="reg-no">Reg. No.: S/3369/SDM/NW/2018 (पंजीकृत)</p>
+            <p class="subtitle">सदस्यता कार्ड बनाएं — Generate Your Membership Card</p>
+            <div class="matdan-badge">मतदान क्रमांक कार्ड</div>
+        </section>
+
+        <!-- ===== FORM SECTION ===== -->
+        <section class="glass-panel" id="formSection">
+            <h3>📋 अपनी जानकारी भरें — Fill Your Details</h3>
+            <form id="cardForm" autocomplete="off">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="memberName">पूरा नाम / Full Name *</label>
+                        <input type="text" id="memberName" placeholder="Name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="fatherName">पिता का नाम / Father's Name *</label>
+                        <input type="text" id="fatherName" placeholder="Name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="aadhaarNo">आधार नंबर / Aadhaar Number *</label>
+                        <input type="text" id="aadhaarNo" placeholder="XXXX XXXX XXXX" maxlength="14" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="phoneNo">फोन नंबर / Phone Number *</label>
+                        <input type="tel" id="phoneNo" placeholder="+91 XXXXXXXXXX" maxlength="15" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="city">शहर / City *</label>
+                        <input type="text" id="city" placeholder="e.g. Indore" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="state">राज्य / State *</label>
+                        <select id="state" required>
+                            <option value="">-- राज्य चुनें --</option>
+                            <option value="Andhra Pradesh">Andhra Pradesh</option>
+                            <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+                            <option value="Assam">Assam</option>
+                            <option value="Bihar">Bihar</option>
+                            <option value="Chhattisgarh">Chhattisgarh</option>
+                            <option value="Delhi">Delhi</option>
+                            <option value="Goa">Goa</option>
+                            <option value="Gujarat">Gujarat</option>
+                            <option value="Haryana">Haryana</option>
+                            <option value="Himachal Pradesh">Himachal Pradesh</option>
+                            <option value="Jharkhand">Jharkhand</option>
+                            <option value="Karnataka">Karnataka</option>
+                            <option value="Kerala">Kerala</option>
+                            <option value="Madhya Pradesh">Madhya Pradesh</option>
+                            <option value="Maharashtra">Maharashtra</option>
+                            <option value="Manipur">Manipur</option>
+                            <option value="Meghalaya">Meghalaya</option>
+                            <option value="Mizoram">Mizoram</option>
+                            <option value="Nagaland">Nagaland</option>
+                            <option value="Odisha">Odisha</option>
+                            <option value="Punjab">Punjab</option>
+                            <option value="Rajasthan">Rajasthan</option>
+                            <option value="Sikkim">Sikkim</option>
+                            <option value="Tamil Nadu">Tamil Nadu</option>
+                            <option value="Telangana">Telangana</option>
+                            <option value="Tripura">Tripura</option>
+                            <option value="Uttar Pradesh">Uttar Pradesh</option>
+                            <option value="Uttarakhand">Uttarakhand</option>
+                            <option value="West Bengal">West Bengal</option>
+                        </select>
+                    </div>
+
+                    <!-- Photo Upload -->
+                    <div class="photo-upload-area" id="photoUploadArea" onclick="document.getElementById('photoInput').click()">
+                        <div class="photo-preview" id="photoPreview">
+                            <span class="placeholder-icon">📷</span>
+                        </div>
+                        <div class="photo-upload-text">
+                            <h4>पासपोर्ट साइज़ फोटो अपलोड करें</h4>
+                            <p>Upload Passport Size Photo — Click to browse (JPG, PNG, max 2MB)</p>
+                        </div>
+                        <input type="file" id="photoInput" accept="image/*">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-generate" id="btnGenerate">
+                    🪪 कार्ड बनाएं — Generate Card
+                </button>
+            </form>
+        </section>
+
+        <!-- ===== CARD PREVIEW SECTION ===== -->
+        <section class="card-section" id="cardSection">
+            <h3>🎉 आपका सदस्यता कार्ड तैयार है!</h3>
+
+            <div class="card-flip-container">
+                <!-- FRONT SIDE -->
+                <div class="id-card" id="cardFront">
+                    <div class="card-header">
+                        <img src="assets/logo-main.png" alt="Logo" class="logo-left">
+                        <div class="header-center">
+                            <div class="reg-no">Reg. No. : S/3369/SDM/NW/2018</div>
+                            <div class="org-name-hindi">अखिल भारतीय माहौर ग्वारे वैश्य महासभा</div>
+                            <div class="org-name-english">Akhil Bhartiya Mahour Gware Vaishya Mahasabha</div>
+                        </div>
+                        <svg class="logo-right" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Scales of Justice / Dharma symbol -->
+                            <circle cx="40" cy="40" r="38" stroke="#1a2d5a" stroke-width="2" fill="rgba(26,45,90,0.1)"/>
+                            <line x1="40" y1="12" x2="40" y2="60" stroke="#1a2d5a" stroke-width="2"/>
+                            <line x1="20" y1="24" x2="60" y2="24" stroke="#1a2d5a" stroke-width="2"/>
+                            <path d="M20 24 Q20 38 28 38 Q20 38 20 24Z" fill="#1a2d5a" opacity="0.3"/>
+                            <path d="M60 24 Q60 38 52 38 Q60 38 60 24Z" fill="#1a2d5a" opacity="0.3"/>
+                            <circle cx="20" cy="24" r="3" fill="#1a2d5a"/>
+                            <circle cx="60" cy="24" r="3" fill="#1a2d5a"/>
+                            <path d="M15 36 Q20 28 25 36 Z" fill="#1a2d5a" opacity="0.5"/>
+                            <path d="M55 36 Q60 28 65 36 Z" fill="#1a2d5a" opacity="0.5"/>
+                            <text x="40" y="53" text-anchor="middle" font-size="11" fill="#1a2d5a" font-family="serif" font-weight="bold">ॐ</text>
+                            <rect x="32" y="60" width="16" height="6" rx="1" fill="#1a2d5a" opacity="0.6"/>
+                        </svg>
+                    </div>
+
+                    <div class="card-member-type">
+                        <span>General Member</span>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="card-details">
+                            <div class="member-name" id="cardName">—</div>
+                            <div class="father-name" id="cardFather">S/o. Shri —</div>
+                            <div class="phone-number" id="cardPhone">+91 —</div>
+                            <div class="city-state">
+                                <div id="cardCity">—</div>
+                                <div id="cardState">—</div>
+                            </div>
+                        </div>
+                        <!-- Watermark -->
+                        <svg class="card-watermark" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <line x1="40" y1="5" x2="40" y2="55" stroke="#888" stroke-width="2"/>
+                            <line x1="18" y1="18" x2="62" y2="18" stroke="#888" stroke-width="2"/>
+                            <circle cx="18" cy="18" r="3" fill="#888"/>
+                            <circle cx="62" cy="18" r="3" fill="#888"/>
+                            <path d="M13 30 Q18 22 23 30 Z" fill="#888" opacity="0.5"/>
+                            <path d="M57 30 Q62 22 67 30 Z" fill="#888" opacity="0.5"/>
+                            <text x="40" y="48" text-anchor="middle" font-size="14" fill="#888" font-family="serif" font-weight="bold">ॐ</text>
+                            <rect x="32" y="55" width="16" height="5" rx="1" fill="#888" opacity="0.5"/>
+                            <!-- rays -->
+                            <line x1="40" y1="35" x2="40" y2="0" stroke="#888" stroke-width="0.5" opacity="0.3"/>
+                            <line x1="40" y1="35" x2="60" y2="5" stroke="#888" stroke-width="0.5" opacity="0.3"/>
+                            <line x1="40" y1="35" x2="75" y2="20" stroke="#888" stroke-width="0.5" opacity="0.3"/>
+                            <line x1="40" y1="35" x2="75" y2="40" stroke="#888" stroke-width="0.5" opacity="0.3"/>
+                            <line x1="40" y1="35" x2="60" y2="65" stroke="#888" stroke-width="0.5" opacity="0.3"/>
+                            <line x1="40" y1="35" x2="20" y2="65" stroke="#888" stroke-width="0.5" opacity="0.3"/>
+                            <line x1="40" y1="35" x2="5" y2="40" stroke="#888" stroke-width="0.5" opacity="0.3"/>
+                            <line x1="40" y1="35" x2="5" y2="20" stroke="#888" stroke-width="0.5" opacity="0.3"/>
+                            <line x1="40" y1="35" x2="20" y2="5" stroke="#888" stroke-width="0.5" opacity="0.3"/>
+                        </svg>
+                        <div class="card-photo-frame">
+                            <img id="cardPhoto" src="" alt="Member Photo">
+                        </div>
+                    </div>
+
+                    <div class="card-footer">
+                        <div class="membership-no">Membership No. : <span id="cardMemberNo">—</span></div>
+                        <div class="issuing-date">Issuing Date : <span id="cardDate">—</span></div>
+                    </div>
+                </div>
+
+                <!-- BACK SIDE -->
+                <div class="id-card-back" id="cardBack">
+                    <div class="card-back-header">
+                        <img src="assets/logo-main.png" alt="Logo" class="logo-left">
+                        <div class="header-center">
+                            <div class="reg-no">Reg. No. : S/3369/SDM/NW/2018</div>
+                            <div class="org-name-hindi">अखिल भारतीय माहौर ग्वारे वैश्य महासभा</div>
+                            <div class="org-name-english">Akhil Bhartiya Mahour Gware Vaishya Mahasabha</div>
+                        </div>
+                        <svg class="logo-right" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="40" cy="40" r="38" stroke="#1a2d5a" stroke-width="2" fill="rgba(26,45,90,0.1)"/>
+                            <line x1="40" y1="12" x2="40" y2="60" stroke="#1a2d5a" stroke-width="2"/>
+                            <line x1="20" y1="24" x2="60" y2="24" stroke="#1a2d5a" stroke-width="2"/>
+                            <circle cx="20" cy="24" r="3" fill="#1a2d5a"/>
+                            <circle cx="60" cy="24" r="3" fill="#1a2d5a"/>
+                            <path d="M15 36 Q20 28 25 36 Z" fill="#1a2d5a" opacity="0.5"/>
+                            <path d="M55 36 Q60 28 65 36 Z" fill="#1a2d5a" opacity="0.5"/>
+                            <text x="40" y="53" text-anchor="middle" font-size="11" fill="#1a2d5a" font-family="serif" font-weight="bold">ॐ</text>
+                            <rect x="32" y="60" width="16" height="6" rx="1" fill="#1a2d5a" opacity="0.6"/>
+                        </svg>
+                    </div>
+
+                    <div class="signature-section">
+                        <div class="signature-box">
+                            <div class="sig-title">Auth. Signature</div>
+                            <div class="sig-line"></div>
+                            <div class="sig-name">(name)</div>
+                            <div class="sig-designation">National Secretary</div>
+                        </div>
+
+                        <!-- Back watermark -->
+                        <svg class="card-back-watermark" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <line x1="40" y1="5" x2="40" y2="55" stroke="#888" stroke-width="2"/>
+                            <line x1="18" y1="18" x2="62" y2="18" stroke="#888" stroke-width="2"/>
+                            <text x="40" y="48" text-anchor="middle" font-size="14" fill="#888" font-family="serif" font-weight="bold">ॐ</text>
+                        </svg>
+
+                        <div class="signature-box">
+                            <div class="sig-title">Auth. Signature</div>
+                            <div class="sig-line"></div>
+                            <div class="sig-name">(name)</div>
+                            <div class="sig-designation">National President</div>
+                        </div>
+                    </div>
+
+                    <div class="card-instructions">
+                        <h5>Instruction :</h5>
+                        <p>This card is property of Akhil Bhartiya Mahour Gware Vaishya Mahasabha and is nontransferable. The use of this card is governed by the terms and conditions of A.B.M.G.V.M registered legislation. If found please contact at :</p>
+                    </div>
+
+                    <!-- QR Code -->
+                    <div class="card-qr" id="cardQR"></div>
+
+                    <div class="card-back-footer">
+                        <div class="contact-item">📞 President - <span>9876543210</span></div>
+                        <div class="contact-item">📞 Media Prabhari - <span>9876543210</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Download & Edit Buttons -->
+            <div class="download-buttons">
+                <button class="btn-download png" id="btnDownloadPNG" onclick="downloadCardPNG()">
+                    <span class="icon">🖼️</span> Download PNG
+                </button>
+                <button class="btn-download pdf" id="btnDownloadPDF" onclick="downloadCardPDF()">
+                    <span class="icon">📄</span> Download PDF
+                </button>
+                <button class="btn-download edit" id="btnEditCard" onclick="editCard()">
+                    <span class="icon">✏️</span> Edit Card
+                </button>
+            </div>
+        </section>
+
+        <!-- Admin link -->
+        <div class="admin-link">
+            <a href="admin.html">🔐 Admin Panel</a>
+        </div>
+
+    </div>
+
+    <!-- Hidden render areas for high-quality capture -->
+    <div class="card-render-area" id="renderArea"></div>
+
+    <!-- Toast notification -->
+    <div class="toast" id="toast"></div>
+
+    <script src="firebase-config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
