@@ -488,43 +488,67 @@ function formatDate(date) {
     return `${d}/${m}/${y}`;
 }
 
-// --- Render card to canvas — force exact size via injected style, then capture ---
+// --- Render card to canvas: detach from flex parent, capture at exact size, re-attach ---
 async function renderCardToCanvas(sourceEl) {
-    // Inject a style that hard-locks both card elements to their natural size
-    const styleEl = document.createElement('style');
-    styleEl.id = '__card-capture-style__';
-    styleEl.textContent = `
-        #cardFront, #cardBack {
-            width: 500px !important;
-            height: 310px !important;
-            min-width: 500px !important;
-            min-height: 310px !important;
-            max-height: 310px !important;
-            transform: none !important;
-            flex-shrink: 0 !important;
-            overflow: hidden !important;
-        }
-        .card-flip-container {
-            transform: none !important;
-        }
-    `;
-    document.head.appendChild(styleEl);
+    const W = 500, H = 310, S = 3;
 
-    // One paint cycle for the styles to apply
+    // Remember where this element lives
+    const parent   = sourceEl.parentElement;
+    const nextEl   = sourceEl.nextSibling;
+
+    // Build an isolated off-screen wrapper
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = [
+        'position:fixed',
+        'top:-9999px',
+        'left:-9999px',
+        `width:${W}px`,
+        `height:${H}px`,
+        'overflow:hidden',
+        'z-index:-9999',
+        'pointer-events:none'
+    ].join(';');
+
+    // Move the real element into the wrapper with forced dimensions
+    const savedStyle = sourceEl.style.cssText;
+    sourceEl.style.cssText = [
+        `width:${W}px`,
+        `min-width:${W}px`,
+        `height:${H}px`,
+        `min-height:${H}px`,
+        `max-height:${H}px`,
+        'transform:none',
+        'position:relative',
+        'overflow:hidden',
+        'border-radius:14px',
+        'flex-shrink:0',
+        'margin:0'
+    ].join('!important;') + '!important';
+
+    wrapper.appendChild(sourceEl);
+    document.body.appendChild(wrapper);
+
+    // Two frames so browser reflows the new layout
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
     const canvas = await html2canvas(sourceEl, {
-        scale: 3,
+        scale: S,
         useCORS: true,
         allowTaint: true,
-        backgroundColor: '#ffffff',
+        backgroundColor: null,
         logging: false,
-        width: 500,
-        height: 310
+        width: W,
+        height: H
     });
 
-    // Remove the injected style
-    document.head.removeChild(styleEl);
+    // Put element back exactly where it was
+    sourceEl.style.cssText = savedStyle;
+    if (nextEl) {
+        parent.insertBefore(sourceEl, nextEl);
+    } else {
+        parent.appendChild(sourceEl);
+    }
+    document.body.removeChild(wrapper);
 
     return canvas;
 }
@@ -541,24 +565,25 @@ async function downloadCardPNG() {
         const frontCanvas = await renderCardToCanvas(document.getElementById('cardFront'));
         const backCanvas  = await renderCardToCanvas(document.getElementById('cardBack'));
 
-        // Create combined canvas (front on top, back below)
-        const gap = 60;
-        const combinedCanvas = document.createElement('canvas');
-        combinedCanvas.width  = frontCanvas.width;
-        combinedCanvas.height = frontCanvas.height + gap + backCanvas.height;
-        const ctx = combinedCanvas.getContext('2d');
+        // Fixed output size: 500x310 @ scale 3 = 1500x930
+        const CW = 1500, CH = 930, GAP = 60;
 
-        // Light grey background
-        ctx.fillStyle = '#e8e8e8';
-        ctx.fillRect(0, 0, combinedCanvas.width, combinedCanvas.height);
+        const combined = document.createElement('canvas');
+        combined.width  = CW;
+        combined.height = CH * 2 + GAP;
+        const ctx = combined.getContext('2d');
 
-        ctx.drawImage(frontCanvas, 0, 0);
-        ctx.drawImage(backCanvas,  0, frontCanvas.height + gap);
+        ctx.fillStyle = '#e0e0e0';
+        ctx.fillRect(0, 0, combined.width, combined.height);
+
+        // Draw both cards at consistent fixed size
+        ctx.drawImage(frontCanvas, 0, 0, CW, CH);
+        ctx.drawImage(backCanvas,  0, CH + GAP, CW, CH);
 
         const safeName = (currentMemberData.name || 'member').replace(/\s+/g, '_');
         const link = document.createElement('a');
         link.download = `ABMGVM_Card_${safeName}.png`;
-        link.href = combinedCanvas.toDataURL('image/png');
+        link.href = combined.toDataURL('image/png');
         link.click();
 
         showToast('✅ PNG डाउनलोड हो गया! PNG Downloaded!', 'success');
@@ -582,34 +607,27 @@ async function downloadCardPDF() {
         const frontCanvas = await renderCardToCanvas(document.getElementById('cardFront'));
         const backCanvas  = await renderCardToCanvas(document.getElementById('cardBack'));
 
-        // Card dimensions in mm (standard ID card: 85.6mm x 53.98mm)
+        // Standard ID card size in mm
         const cardW = 85.6;
         const cardH = 53.98;
 
-        // A4 page
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pageW = pdf.internal.pageSize.getWidth();
         const pageH = pdf.internal.pageSize.getHeight();
-
-        // Center cards on page
         const xOffset = (pageW - cardW) / 2;
         let yOffset = 30;
 
-        // Title
         pdf.setFontSize(12);
         pdf.setTextColor(26, 45, 90);
         pdf.text('Akhil Bhartiya Mahour Gware Vaishya Mahasabha', pageW / 2, 15, { align: 'center' });
         pdf.setFontSize(9);
         pdf.text('Membership Card — Front & Back', pageW / 2, 22, { align: 'center' });
 
-        // Front card
+        // Always place at exact cardW x cardH — avoids any size mismatch from capture
         pdf.addImage(frontCanvas.toDataURL('image/png'), 'PNG', xOffset, yOffset, cardW, cardH);
-
-        // Back card
         yOffset += cardH + 15;
-        pdf.addImage(backCanvas.toDataURL('image/png'), 'PNG', xOffset, yOffset, cardW, cardH);
+        pdf.addImage(backCanvas.toDataURL('image/png'),  'PNG', xOffset, yOffset, cardW, cardH);
 
-        // Footer
         pdf.setFontSize(7);
         pdf.setTextColor(150, 150, 150);
         pdf.text('Generated by ABMGVM Card Maker', pageW / 2, pageH - 10, { align: 'center' });
@@ -623,6 +641,8 @@ async function downloadCardPDF() {
         showToast('PDF डाउनलोड में त्रुटि! Error downloading PDF.', 'error');
     }
 }
+
+
 
 // --- Toast notification ---
 function showToast(message, type = 'success') {
