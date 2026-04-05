@@ -488,37 +488,45 @@ function formatDate(date) {
     return `${d}/${m}/${y}`;
 }
 
-// --- Helper: render card to canvas using onclone to fix any transforms ---
+// --- Render card to canvas — force exact size via injected style, then capture ---
 async function renderCardToCanvas(sourceEl) {
-    return await html2canvas(sourceEl, {
+    // Inject a style that hard-locks both card elements to their natural size
+    const styleEl = document.createElement('style');
+    styleEl.id = '__card-capture-style__';
+    styleEl.textContent = `
+        #cardFront, #cardBack {
+            width: 500px !important;
+            height: 310px !important;
+            min-width: 500px !important;
+            min-height: 310px !important;
+            max-height: 310px !important;
+            transform: none !important;
+            flex-shrink: 0 !important;
+            overflow: hidden !important;
+        }
+        .card-flip-container {
+            transform: none !important;
+        }
+    `;
+    document.head.appendChild(styleEl);
+
+    // One paint cycle for the styles to apply
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+    const canvas = await html2canvas(sourceEl, {
         scale: 3,
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
         logging: false,
         width: 500,
-        height: 310,
-        onclone: function(clonedDoc) {
-            const el = clonedDoc.getElementById(sourceEl.id);
-            if (el) {
-                el.style.cssText = [
-                    'width:500px',
-                    'height:310px',
-                    'min-width:500px',
-                    'min-height:310px',
-                    'transform:none',
-                    'position:relative',
-                    'overflow:hidden',
-                    'border-radius:14px',
-                    'flex-shrink:0'
-                ].join('!important;') + '!important';
-            }
-            // Kill any transform on parent
-            if (el && el.parentElement) {
-                el.parentElement.style.transform = 'none';
-            }
-        }
+        height: 310
     });
+
+    // Remove the injected style
+    document.head.removeChild(styleEl);
+
+    return canvas;
 }
 
 // --- Download PNG ---
