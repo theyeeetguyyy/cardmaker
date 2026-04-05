@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>सदस्यता कार्ड | अखिल भारतीय माहौर ग्वारे वैश्य महासभा</title>
     <meta name="description" content="अखिल भारतीय माहौर ग्वारे वैश्य महासभा (पंजीकृत) - सदस्यता कार्ड बनाएं। Akhil Bhartiya Mahour Gware Vaishya Mahasabha Membership Card Generator.">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=1.1">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -35,7 +35,10 @@
 
         <!-- ===== FORM SECTION ===== -->
         <section class="glass-panel" id="formSection">
-            <h3>📋 अपनी जानकारी भरें — Fill Your Details</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+                <h3 style="margin-bottom: 0; padding-bottom: 0; border-bottom: none;">📋 अपनी जानकारी भरें — Fill Your Details</h3>
+                <button type="button" class="btn-find" onclick="openFindModal()">🔍 कार्ड खोजें — Find Card</button>
+            </div>
             <form id="cardForm" autocomplete="off">
                 <div class="form-grid">
                     <div class="form-group">
@@ -248,6 +251,27 @@
 
     </div>
 
+    <!-- Find Card Modal -->
+    <div class="modal-overlay" id="findModal">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <button class="modal-close" onclick="closeFindModal()">✕</button>
+            <h3 style="color: var(--saffron); font-family: var(--font-hindi); margin-bottom: 16px;">🔍 कार्ड खोजें — Find Card</h3>
+            <p style="color: var(--gray-300); font-size: 0.85rem; margin-bottom: 24px;">Enter your phone and aadhaar number to fetch your previously generated card.</p>
+            
+            <form id="findForm" autocomplete="off" onsubmit="submitFindCard(event)">
+                <div class="form-group" style="text-align: left; margin-bottom: 16px;">
+                    <label for="findPhone">फोन नंबर / Phone Number *</label>
+                    <input type="tel" id="findPhone" placeholder="+91 XXXXXXXXXX" required>
+                </div>
+                <div class="form-group" style="text-align: left; margin-bottom: 24px;">
+                    <label for="findAadhaar">आधार नंबर / Aadhaar *</label>
+                    <input type="text" id="findAadhaar" placeholder="XXXX XXXX XXXX" required>
+                </div>
+                <button type="submit" class="btn-generate" id="btnFindCardSearch" style="width: 100%; padding: 12px;">खोजें — Search</button>
+            </form>
+        </div>
+    </div>
+
     <!-- Hidden render areas for high-quality capture -->
     <div class="card-render-area" id="renderArea"></div>
 
@@ -255,6 +279,6 @@
     <div class="toast" id="toast"></div>
 
     <script src="firebase-config.js"></script>
-    <script src="app.js"></script>
+    <script src="app.js?v=1.1"></script>
 </body>
 </html>

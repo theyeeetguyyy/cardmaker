@@ -368,6 +368,24 @@ body {
     transform: none;
 }
 
+.btn-find {
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--blue-light);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-find:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--white);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
 /* ---- Card Preview Section ---- */
 .card-section {
     display: none;

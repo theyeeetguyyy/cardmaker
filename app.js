@@ -114,6 +114,118 @@ async function checkDuplicate(aadhaarNo, phoneNo) {
     }
 }
 
+// --- Find Card Logic ---
+function openFindModal() {
+    document.getElementById('findModal').classList.add('visible');
+    document.getElementById('findPhone').value = '';
+    document.getElementById('findAadhaar').value = '';
+}
+
+function closeFindModal() {
+    document.getElementById('findModal').classList.remove('visible');
+}
+
+// Close find modal on overlay click
+document.getElementById('findModal').addEventListener('click', function (e) {
+    if (e.target === this) closeFindModal();
+});
+
+async function submitFindCard(e) {
+    e.preventDefault();
+    
+    let phoneQuery = document.getElementById('findPhone').value.trim();
+    const aadhaarQuery = document.getElementById('findAadhaar').value.trim();
+    const btn = document.getElementById('btnFindCardSearch');
+
+    // Format phone exactly as we do in the input
+    let valPhone = phoneQuery.replace(/[^\d+]/g, '');
+    if (!valPhone.startsWith('+91') && !valPhone.startsWith('+')) {
+        if (valPhone.startsWith('91') && valPhone.length > 10) {
+            valPhone = '+' + valPhone;
+        } else if (valPhone.length <= 10) {
+            valPhone = '+91 ' + valPhone;
+        }
+    }
+    phoneQuery = valPhone;
+
+    // Format aadhaar exactly as we do in the input
+    let valAadhaar = aadhaarQuery.replace(/\D/g, '');
+    if (valAadhaar.length > 12) valAadhaar = valAadhaar.slice(0, 12);
+    let formattedAadhaar = '';
+    for (let i = 0; i < valAadhaar.length; i++) {
+        if (i > 0 && i % 4 === 0) formattedAadhaar += ' ';
+        formattedAadhaar += valAadhaar[i];
+    }
+    const finalAadhaar = formattedAadhaar;
+
+    if (finalAadhaar.replace(/\s/g, '').length !== 12) {
+        showToast('आधार नंबर 12 अंकों का होना चाहिए!', 'error');
+        return;
+    }
+
+    try {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> खोजा जा रहा है...';
+
+        const snapshot = await db.ref('members').orderByChild('aadhaar').equalTo(finalAadhaar).once('value');
+        if (!snapshot.exists()) {
+            showToast('❌ इस आधार नंबर से कोई कार्ड नहीं मिला!', 'error');
+            return;
+        }
+
+        let foundMember = null;
+        let foundKey = null;
+        snapshot.forEach(child => {
+            if (child.val().phone === phoneQuery) {
+                foundMember = child.val();
+                foundKey = child.key;
+            }
+        });
+
+        if (!foundMember) {
+            showToast('❌ फोन नंबर मेल नहीं खा रहा है!', 'error');
+            return;
+        }
+
+        // Successfully found! Load the data to current mode
+        currentMemberData = foundMember;
+        currentFirebaseKey = foundKey;
+        isEditMode = true; // Technically they can edit it now, but we'll adapt to just showing it
+        
+        btnGenerate.innerHTML = '✏️ कार्ड अपडेट करें — Update Card';
+        
+        // Populate card
+        populateCard(currentMemberData);
+        
+        // Pre-fill form fields
+        document.getElementById('memberName').value = currentMemberData.name || '';
+        document.getElementById('fatherName').value = currentMemberData.fatherName || '';
+        document.getElementById('aadhaarNo').value = currentMemberData.aadhaar || '';
+        document.getElementById('phoneNo').value = currentMemberData.phone || '';
+        document.getElementById('city').value = currentMemberData.city || '';
+        document.getElementById('state').value = currentMemberData.state || '';
+        
+        uploadedPhotoDataURL = currentMemberData.photo;
+        photoPreview.innerHTML = `<img src="${uploadedPhotoDataURL}" alt="Your Photo">`;
+        photoUploadArea.style.borderColor = 'var(--green)';
+
+        closeFindModal();
+        
+        // Show card section
+        cardSection.classList.add('visible');
+        cardSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        
+        showToast('✅ कार्ड मिल गया! Card retrieved successfully!', 'success');
+        
+    } catch (err) {
+        console.error("Find card error:", err);
+        showToast('सर्च करने में त्रुटि आई! Error searching.', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'खोजें — Search';
+    }
+}
+
 // --- Form Submission ---
 cardForm.addEventListener('submit', async function (e) {
     e.preventDefault();
@@ -383,6 +495,11 @@ async function downloadCardPNG() {
     showToast('🖼️ PNG बन रहा है... Generating PNG...', 'success');
 
     try {
+        // Temporarily remove transform on container to fix html2canvas calculation errors
+        const flipContainer = document.querySelector('.card-flip-container');
+        const oldTransform = flipContainer.style.transform;
+        flipContainer.style.transform = 'none';
+
         // Create a combined image with front and back
         const frontCanvas = await html2canvas(document.getElementById('cardFront'), {
             scale: 3,
@@ -399,6 +516,9 @@ async function downloadCardPNG() {
             backgroundColor: '#ffffff',
             logging: false
         });
+        
+        // Restore transform
+        flipContainer.style.transform = oldTransform;
 
         // Create combined canvas
         const gap = 40;
@@ -436,6 +556,11 @@ async function downloadCardPDF() {
     try {
         const { jsPDF } = window.jspdf;
 
+        // Temporarily remove transform on container
+        const flipContainer = document.querySelector('.card-flip-container');
+        const oldTransform = flipContainer.style.transform;
+        flipContainer.style.transform = 'none';
+
         const frontCanvas = await html2canvas(document.getElementById('cardFront'), {
             scale: 3,
             useCORS: true,
@@ -451,6 +576,9 @@ async function downloadCardPDF() {
             backgroundColor: '#ffffff',
             logging: false
         });
+        
+        // Restore transform
+        flipContainer.style.transform = oldTransform;
 
         // Card dimensions in mm (standard ID card: 85.6mm x 53.98mm)
         const cardW = 85.6;
