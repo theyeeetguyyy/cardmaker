@@ -355,29 +355,6 @@ function populateCard(data) {
     document.getElementById('cardDate').textContent = data.issuingDate;
     document.getElementById('cardPhoto').src = data.photo;
 
-    // Generate QR code
-    const qrContainer = document.getElementById('cardQR');
-    qrContainer.innerHTML = '';
-    new QRCode(qrContainer, {
-        text: `ABMGVM Member: ${data.name} | No: ${data.membershipNo} | Ph: ${data.phone}`,
-        width: 50,
-        height: 50,
-        colorDark: '#1a2d5a',
-        colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.M
-    });
-    // Convert QR canvas to img so html2canvas can clone it properly
-    setTimeout(() => {
-        const qrCanvas = qrContainer.querySelector('canvas');
-        if (qrCanvas) {
-            const img = document.createElement('img');
-            img.src = qrCanvas.toDataURL();
-            img.style.width = '50px';
-            img.style.height = '50px';
-            qrContainer.innerHTML = '';
-            qrContainer.appendChild(img);
-        }
-    }, 150);
 }
 
 // --- Get next membership number (Firebase RTDB transaction) ---
