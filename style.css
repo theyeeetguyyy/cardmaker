@@ -674,6 +674,8 @@ body {
     box-shadow: var(--shadow-xl);
     font-family: var(--font-english);
     color: var(--black);
+    display: flex;
+    flex-direction: column;
 }
 
 .card-back-header {
@@ -753,7 +755,7 @@ body {
 .signature-section {
     display: flex;
     justify-content: space-around;
-    padding: 10px 20px 6px;
+    padding: 6px 20px 4px;
     position: relative;
 }
 
@@ -806,10 +808,42 @@ body {
     object-fit: contain;
 }
 
+/* Leadership panel on card back */
+.card-leadership-panel {
+    margin: 0 12px 4px;
+    border: 1px solid rgba(26, 45, 90, 0.25);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.leadership-label {
+    font-size: 0.38rem;
+    font-weight: 700;
+    color: #1a2d5a;
+    text-align: center;
+    padding: 2px 4px;
+    background: rgba(26, 45, 90, 0.06);
+    border-bottom: 1px solid rgba(26, 45, 90, 0.15);
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+.leadership-img-wrap {
+    height: 42px;
+    overflow: hidden;
+}
+
+.leadership-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 40%;
+    display: block;
+}
+
 /* Instructions section */
 .card-instructions {
-    padding: 6px 20px;
-    border-top: 1px solid var(--gray-200);
+    padding: 4px 12px 2px;
 }
 
 .card-instructions h5 {

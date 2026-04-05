@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>सदस्यता कार्ड | अखिल भारतीय माहौर ग्वारे वैश्य महासभा</title>
     <meta name="description" content="अखिल भारतीय माहौर ग्वारे वैश्य महासभा (पंजीकृत) - सदस्यता कार्ड बनाएं। Akhil Bhartiya Mahour Gware Vaishya Mahasabha Membership Card Generator.">
-    <link rel="stylesheet" href="style.css?v=1.2">
+    <link rel="stylesheet" href="style.css?v=3.0">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -176,24 +176,12 @@
 
                 <!-- BACK SIDE -->
                 <div class="id-card-back" id="cardBack">
-                    <div class="card-back-header">
-                        <img src="assets/logo-main.png" alt="Logo" class="logo-left">
-                        <div class="header-center">
-                            <div class="reg-no">Reg. No. : S/3369/SDM/NW/2018</div>
+                    <div class="card-back-header" style="justify-content:center;">
+                        <div class="header-center" style="text-align:center;">
+                            <div class="reg-no" style="text-align:center;">Reg. No. : S/3369/SDM/NW/2018</div>
                             <div class="org-name-hindi">अखिल भारतीय माहौर ग्वारे वैश्य महासभा</div>
                             <div class="org-name-english">Akhil Bhartiya Mahour Gware Vaishya Mahasabha</div>
                         </div>
-                        <svg class="logo-right" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="40" cy="40" r="38" stroke="#1a2d5a" stroke-width="2" fill="rgba(26,45,90,0.1)"/>
-                            <line x1="40" y1="12" x2="40" y2="60" stroke="#1a2d5a" stroke-width="2"/>
-                            <line x1="20" y1="24" x2="60" y2="24" stroke="#1a2d5a" stroke-width="2"/>
-                            <circle cx="20" cy="24" r="3" fill="#1a2d5a"/>
-                            <circle cx="60" cy="24" r="3" fill="#1a2d5a"/>
-                            <path d="M15 36 Q20 28 25 36 Z" fill="#1a2d5a" opacity="0.5"/>
-                            <path d="M55 36 Q60 28 65 36 Z" fill="#1a2d5a" opacity="0.5"/>
-                            <text x="40" y="53" text-anchor="middle" font-size="11" fill="#1a2d5a" font-family="serif" font-weight="bold">ॐ</text>
-                            <rect x="32" y="60" width="16" height="6" rx="1" fill="#1a2d5a" opacity="0.6"/>
-                        </svg>
                     </div>
 
                     <div class="signature-section">
@@ -215,10 +203,7 @@
                         </div>
                     </div>
 
-                    <div class="card-instructions">
-                        <h5>Instruction :</h5>
-                        <p>This card is property of Akhil Bhartiya Mahour Gware Vaishya Mahasabha and is nontransferable. The use of this card is governed by the terms and conditions of A.B.M.G.V.M registered legislation. If found please contact at :</p>
-                    </div>
+
 
                     <!-- QR Code -->
                     <div class="card-qr" id="cardQR"></div>
@@ -279,6 +264,6 @@
     <div class="toast" id="toast"></div>
 
     <script src="firebase-config.js"></script>
-    <script src="app.js?v=1.2"></script>
+    <script src="app.js?v=3.0"></script>
 </body>
 </html>

@@ -334,12 +334,21 @@ cardForm.addEventListener('submit', async function (e) {
     }
 });
 
+// --- Mask Aadhaar to show only last 4 digits ---
+function maskAadhaar(aadhaar) {
+    // aadhaar is stored as "XXXX XXXX XXXX" (with spaces)
+    const digits = aadhaar.replace(/\s/g, '');
+    if (digits.length !== 12) return aadhaar;
+    const last4 = digits.slice(-4);
+    return `XXXX XXXX ${last4}`;
+}
+
 // --- Populate card with data ---
 function populateCard(data) {
     document.getElementById('cardName').textContent = data.name.toUpperCase();
     document.getElementById('cardFather').textContent = `S/o. Shri ${data.fatherName}`;
     document.getElementById('cardPhone').textContent = data.phone;
-    document.getElementById('cardAadhaar').textContent = `Aadhaar: ${data.aadhaar}`;
+    document.getElementById('cardAadhaar').textContent = `Aadhaar: ${maskAadhaar(data.aadhaar)}`;
     document.getElementById('cardCity').textContent = data.city.toUpperCase();
     document.getElementById('cardState').textContent = data.state.toUpperCase();
     document.getElementById('cardMemberNo').textContent = data.membershipNo;
@@ -357,6 +366,18 @@ function populateCard(data) {
         colorLight: '#ffffff',
         correctLevel: QRCode.CorrectLevel.M
     });
+    // Convert QR canvas to img so html2canvas can clone it properly
+    setTimeout(() => {
+        const qrCanvas = qrContainer.querySelector('canvas');
+        if (qrCanvas) {
+            const img = document.createElement('img');
+            img.src = qrCanvas.toDataURL();
+            img.style.width = '50px';
+            img.style.height = '50px';
+            qrContainer.innerHTML = '';
+            qrContainer.appendChild(img);
+        }
+    }, 150);
 }
 
 // --- Get next membership number (Firebase RTDB transaction) ---
@@ -490,55 +511,68 @@ function formatDate(date) {
     return `${d}/${m}/${y}`;
 }
 
+// --- Helper: render card to canvas using onclone to fix any transforms ---
+async function renderCardToCanvas(sourceEl) {
+    return await html2canvas(sourceEl, {
+        scale: 3,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        width: 500,
+        height: 310,
+        onclone: function(clonedDoc) {
+            const el = clonedDoc.getElementById(sourceEl.id);
+            if (el) {
+                el.style.cssText = [
+                    'width:500px',
+                    'height:310px',
+                    'min-width:500px',
+                    'min-height:310px',
+                    'transform:none',
+                    'position:relative',
+                    'overflow:hidden',
+                    'border-radius:14px',
+                    'flex-shrink:0'
+                ].join('!important;') + '!important';
+            }
+            // Kill any transform on parent
+            if (el && el.parentElement) {
+                el.parentElement.style.transform = 'none';
+            }
+        }
+    });
+}
+
 // --- Download PNG ---
 async function downloadCardPNG() {
+    if (!currentMemberData) {
+        showToast('पहले कार्ड बनाएं! Please generate a card first.', 'error');
+        return;
+    }
     showToast('🖼️ PNG बन रहा है... Generating PNG...', 'success');
 
     try {
-        // Temporarily remove transform on container to fix html2canvas calculation errors
-        const flipContainer = document.querySelector('.card-flip-container');
-        const oldTransform = flipContainer.style.transform;
-        flipContainer.style.transform = 'none';
+        const frontCanvas = await renderCardToCanvas(document.getElementById('cardFront'));
+        const backCanvas  = await renderCardToCanvas(document.getElementById('cardBack'));
 
-        // Create a combined image with front and back
-        const frontCanvas = await html2canvas(document.getElementById('cardFront'), {
-            scale: 3,
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: '#ffffff',
-            logging: false
-        });
-
-        const backCanvas = await html2canvas(document.getElementById('cardBack'), {
-            scale: 3,
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: '#ffffff',
-            logging: false
-        });
-        
-        // Restore transform
-        flipContainer.style.transform = oldTransform;
-
-        // Create combined canvas
-        const gap = 40;
+        // Create combined canvas (front on top, back below)
+        const gap = 60;
         const combinedCanvas = document.createElement('canvas');
-        combinedCanvas.width = frontCanvas.width;
+        combinedCanvas.width  = frontCanvas.width;
         combinedCanvas.height = frontCanvas.height + gap + backCanvas.height;
         const ctx = combinedCanvas.getContext('2d');
 
-        // White background
-        ctx.fillStyle = '#f0f0f0';
+        // Light grey background
+        ctx.fillStyle = '#e8e8e8';
         ctx.fillRect(0, 0, combinedCanvas.width, combinedCanvas.height);
 
-        // Draw front
         ctx.drawImage(frontCanvas, 0, 0);
-        // Draw back
-        ctx.drawImage(backCanvas, 0, frontCanvas.height + gap);
+        ctx.drawImage(backCanvas,  0, frontCanvas.height + gap);
 
-        // Download
+        const safeName = (currentMemberData.name || 'member').replace(/\s+/g, '_');
         const link = document.createElement('a');
-        link.download = `ABMGVM_Card_${currentMemberData.name.replace(/\s+/g, '_')}.png`;
+        link.download = `ABMGVM_Card_${safeName}.png`;
         link.href = combinedCanvas.toDataURL('image/png');
         link.click();
 
@@ -551,34 +585,17 @@ async function downloadCardPNG() {
 
 // --- Download PDF ---
 async function downloadCardPDF() {
+    if (!currentMemberData) {
+        showToast('पहले कार्ड बनाएं! Please generate a card first.', 'error');
+        return;
+    }
     showToast('📄 PDF बन रहा है... Generating PDF...', 'success');
 
     try {
         const { jsPDF } = window.jspdf;
 
-        // Temporarily remove transform on container
-        const flipContainer = document.querySelector('.card-flip-container');
-        const oldTransform = flipContainer.style.transform;
-        flipContainer.style.transform = 'none';
-
-        const frontCanvas = await html2canvas(document.getElementById('cardFront'), {
-            scale: 3,
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: '#ffffff',
-            logging: false
-        });
-
-        const backCanvas = await html2canvas(document.getElementById('cardBack'), {
-            scale: 3,
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: '#ffffff',
-            logging: false
-        });
-        
-        // Restore transform
-        flipContainer.style.transform = oldTransform;
+        const frontCanvas = await renderCardToCanvas(document.getElementById('cardFront'));
+        const backCanvas  = await renderCardToCanvas(document.getElementById('cardBack'));
 
         // Card dimensions in mm (standard ID card: 85.6mm x 53.98mm)
         const cardW = 85.6;
@@ -601,21 +618,19 @@ async function downloadCardPDF() {
         pdf.text('Membership Card — Front & Back', pageW / 2, 22, { align: 'center' });
 
         // Front card
-        const frontImgData = frontCanvas.toDataURL('image/png');
-        pdf.addImage(frontImgData, 'PNG', xOffset, yOffset, cardW, cardH);
+        pdf.addImage(frontCanvas.toDataURL('image/png'), 'PNG', xOffset, yOffset, cardW, cardH);
 
         // Back card
         yOffset += cardH + 15;
-        const backImgData = backCanvas.toDataURL('image/png');
-        pdf.addImage(backImgData, 'PNG', xOffset, yOffset, cardW, cardH);
+        pdf.addImage(backCanvas.toDataURL('image/png'), 'PNG', xOffset, yOffset, cardW, cardH);
 
         // Footer
         pdf.setFontSize(7);
         pdf.setTextColor(150, 150, 150);
         pdf.text('Generated by ABMGVM Card Maker', pageW / 2, pageH - 10, { align: 'center' });
 
-        // Save
-        pdf.save(`ABMGVM_Card_${currentMemberData.name.replace(/\s+/g, '_')}.pdf`);
+        const safeName = (currentMemberData.name || 'member').replace(/\s+/g, '_');
+        pdf.save(`ABMGVM_Card_${safeName}.pdf`);
 
         showToast('✅ PDF डाउनलोड हो गया! PDF Downloaded!', 'success');
     } catch (err) {
