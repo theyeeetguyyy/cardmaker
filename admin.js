@@ -255,6 +255,7 @@ function populateRenderCard(data) {
     document.getElementById('cardName').textContent = (data.name || '').toUpperCase();
     document.getElementById('cardFather').textContent = `S/o. Shri ${data.fatherName || ''}`;
     document.getElementById('cardPhone').textContent = data.phone || '';
+    document.getElementById('cardAadhaar').textContent = `Aadhaar: ${data.aadhaar || ''}`;
     document.getElementById('cardCity').textContent = (data.city || '').toUpperCase();
     document.getElementById('cardState').textContent = (data.state || '').toUpperCase();
     document.getElementById('cardMemberNo').textContent = data.membershipNo || '';

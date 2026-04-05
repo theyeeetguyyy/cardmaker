@@ -539,6 +539,13 @@ body {
     margin-bottom: 4px;
 }
 
+.card-details .aadhaar-number {
+    font-size: 0.65rem;
+    color: var(--gray-700);
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+
 .card-details .city-state {
     font-size: 0.7rem;
     font-weight: 600;
@@ -553,10 +560,12 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 80px;
-    height: 80px;
-    opacity: 0.08;
+    width: 150px;
+    height: 150px;
+    opacity: 0.1;
     pointer-events: none;
+    z-index: 0;
+    object-fit: contain;
 }
 
 /* Photo area */
@@ -762,13 +771,15 @@ body {
 /* Back watermark */
 .card-back-watermark {
     position: absolute;
-    top: 42%;
+    top: 45%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 60px;
-    height: 60px;
-    opacity: 0.06;
+    width: 150px;
+    height: 150px;
+    opacity: 0.1;
     pointer-events: none;
+    z-index: 0;
+    object-fit: contain;
 }
 
 /* Instructions section */
@@ -1254,16 +1265,11 @@ body {
         font-size: 1.4rem;
     }
 
-    .id-card,
-    .id-card-back {
-        width: 100%;
-        max-width: 500px;
-        height: auto;
-        aspect-ratio: 500 / 310;
-    }
-
     .card-flip-container {
         gap: 20px;
+        transform: scale(0.85);
+        transform-origin: top center;
+        margin-bottom: -40px;
     }
 
     .glass-panel {
@@ -1301,13 +1307,10 @@ body {
         padding: 30px 10px 20px;
     }
 
-    .card-header .org-name-hindi,
-    .card-back-header .org-name-hindi {
-        font-size: 0.7rem;
-    }
-
-    .card-details .member-name {
-        font-size: 0.7rem;
+    .card-flip-container {
+        transform: scale(0.65);
+        transform-origin: top center;
+        margin-bottom: -100px;
     }
 }
 
