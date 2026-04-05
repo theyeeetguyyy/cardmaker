@@ -425,6 +425,9 @@ body {
 .id-card {
     width: 500px;
     height: 310px;
+    min-width: 500px;
+    min-height: 310px;
+    flex-shrink: 0;
     border-radius: 14px;
     overflow: hidden;
     position: relative;
@@ -661,6 +664,9 @@ body {
 .id-card-back {
     width: 500px;
     height: 310px;
+    min-width: 500px;
+    min-height: 310px;
+    flex-shrink: 0;
     border-radius: 14px;
     overflow: hidden;
     position: relative;
