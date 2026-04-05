@@ -334,28 +334,351 @@ cardForm.addEventListener('submit', async function (e) {
     }
 });
 
-// --- Mask Aadhaar to show only last 4 digits ---
+// --- Mask Aadhaar ---
 function maskAadhaar(aadhaar) {
-    // aadhaar is stored as "XXXX XXXX XXXX" (with spaces)
-    const digits = aadhaar.replace(/\s/g, '');
+    const digits = (aadhaar || '').replace(/\s/g, '');
     if (digits.length !== 12) return aadhaar;
-    const last4 = digits.slice(-4);
-    return `XXXX XXXX ${last4}`;
+    return `XXXX XXXX ${digits.slice(-4)}`;
 }
 
-// --- Populate card with data ---
-function populateCard(data) {
-    document.getElementById('cardName').textContent = data.name.toUpperCase();
-    document.getElementById('cardFather').textContent = `S/o. Shri ${data.fatherName}`;
-    document.getElementById('cardPhone').textContent = data.phone;
-    document.getElementById('cardAadhaar').textContent = `Aadhaar: ${maskAadhaar(data.aadhaar)}`;
-    document.getElementById('cardCity').textContent = data.city.toUpperCase();
-    document.getElementById('cardState').textContent = data.state.toUpperCase();
-    document.getElementById('cardMemberNo').textContent = data.membershipNo;
-    document.getElementById('cardDate').textContent = data.issuingDate;
-    document.getElementById('cardPhoto').src = data.photo;
+// ══════════════════════════════════════════════════════════
+//  CANVAS CARD DRAWING — preview = download, always
+// ══════════════════════════════════════════════════════════
 
+// Cached logo
+let _logoImg = null;
+function getLogoImg() {
+    if (_logoImg) return Promise.resolve(_logoImg);
+    return new Promise(resolve => {
+        const img = new Image();
+        img.onload  = () => { _logoImg = img; resolve(img); };
+        img.onerror = () => resolve(null);
+        img.crossOrigin = 'anonymous';
+        img.src = 'assets/logo-main.png';
+    });
 }
+
+function loadImg(src) {
+    return new Promise(resolve => {
+        if (!src) return resolve(null);
+        const img = new Image();
+        img.onload  = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = src;
+    });
+}
+
+// Rounded rectangle path helper
+function rr(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+}
+// Top-rounded only
+function rrTop(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h);
+    ctx.lineTo(x, y + h);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+}
+// Bottom-rounded only
+function rrBottom(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + w, y);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y);
+    ctx.closePath();
+}
+
+// Draw a centered image cropped to fill a rounded rect
+function drawFitImage(ctx, img, x, y, w, h, r) {
+    ctx.save();
+    rr(ctx, x, y, w, h, r);
+    ctx.clip();
+    const iw = img.naturalWidth  || img.width;
+    const ih = img.naturalHeight || img.height;
+    const scale = Math.max(w / iw, h / ih);
+    const dw = iw * scale, dh = ih * scale;
+    const dx = x + (w - dw) / 2, dy = y + (h - dh) / 2;
+    ctx.drawImage(img, dx, dy, dw, dh);
+    ctx.restore();
+}
+
+// ── FRONT CARD ───────────────────────────────────────────
+async function drawCardFront(canvas, data) {
+    const S = 3;           // canvas is 1500×930 (3× for crisp downloads)
+    const W = 500*S, H = 310*S;
+    const ctx = canvas.getContext('2d');
+    await document.fonts.ready;
+    ctx.clearRect(0, 0, W, H);
+
+    const NAVY   = '#1a2d5a';
+    const TEAL   = '#2eb8d0';
+    const GOLD   = '#c8993a';
+    const WHITE  = '#ffffff';
+    const HDR_H  = 72*S;
+    const FTR_H  = 38*S;
+    const RADIUS = 14*S;
+
+    // ── Card background ──
+    rr(ctx, 0, 0, W, H, RADIUS);
+    ctx.fillStyle = WHITE;
+    ctx.fill();
+
+    // ── Header (navy, top-rounded) ──
+    rrTop(ctx, 0, 0, W, HDR_H, RADIUS);
+    ctx.fillStyle = NAVY;
+    ctx.fill();
+
+    // Gold accent line below header
+    ctx.fillStyle = GOLD;
+    ctx.fillRect(0, HDR_H, W, 3*S);
+
+    // ── Footer (teal, bottom-rounded) ──
+    rrBottom(ctx, 0, H - FTR_H, W, FTR_H, RADIUS);
+    ctx.fillStyle = TEAL;
+    ctx.fill();
+
+    // ── Logo (left, circular clip) ──
+    const logo = await getLogoImg();
+    if (logo) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(36*S, 36*S, 26*S, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(logo, 10*S, 10*S, 52*S, 52*S);
+        ctx.restore();
+        // thin white ring around logo
+        ctx.beginPath();
+        ctx.arc(36*S, 36*S, 26*S, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+        ctx.lineWidth = 1.5*S;
+        ctx.stroke();
+    }
+
+    // ── Header text ──
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.font = `${8*S}px 'Segoe UI', Arial, sans-serif`;
+    ctx.fillText('Reg. No. : S/3369/SDM/NW/2018', W/2, 17*S);
+
+    ctx.fillStyle = WHITE;
+    ctx.font = `bold ${17*S}px 'Nirmala UI', 'Arial Unicode MS', sans-serif`;
+    ctx.fillText('अखिल भारतीय माहौर ग्वारे वैश्य महासभा', W/2, 38*S);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.font = `${9*S}px 'Segoe UI', Arial, sans-serif`;
+    ctx.fillText('Akhil Bhartiya Mahour Gware Vaishya Mahasabha', W/2, 54*S);
+
+    // ── Right logo (same logo, right side) ──
+    if (logo) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc((500-36)*S, 36*S, 26*S, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(logo, (500-62)*S, 10*S, 52*S, 52*S);
+        ctx.restore();
+        ctx.beginPath();
+        ctx.arc((500-36)*S, 36*S, 26*S, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+        ctx.lineWidth = 1.5*S;
+        ctx.stroke();
+    }
+
+    // ── Watermark ──
+    if (logo) {
+        ctx.save();
+        ctx.globalAlpha = 0.05;
+        ctx.drawImage(logo, 130*S, 75*S, 170*S, 170*S);
+        ctx.restore();
+    }
+
+    // ── Member type badge ──
+    ctx.fillStyle = '#138808';
+    ctx.font = `bold ${11.5*S}px 'Segoe UI', Arial, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText('✦  General Member  ✦', W/2, 92*S);
+
+    // ── Member photo ──
+    const photoImg = await loadImg(data.photo);
+    const px = 358*S, py = 80*S, pw = 116*S, ph = 155*S;
+    if (photoImg) {
+        drawFitImage(ctx, photoImg, px, py, pw, ph, 6*S);
+    } else {
+        ctx.fillStyle = '#dde3f0';
+        rr(ctx, px, py, pw, ph, 6*S);
+        ctx.fill();
+        ctx.fillStyle = '#aab';
+        ctx.font = `${28*S}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.fillText('📷', px + pw/2, py + ph/2 + 8*S);
+    }
+    // Photo border
+    ctx.strokeStyle = GOLD;
+    ctx.lineWidth = 2*S;
+    rr(ctx, px, py, pw, ph, 6*S);
+    ctx.stroke();
+
+    // ── Member details ──
+    ctx.textAlign = 'left';
+    const lx = 18*S;
+    let   ly = 112*S;
+
+    ctx.fillStyle = NAVY;
+    ctx.font = `bold ${15*S}px 'Segoe UI', Arial, sans-serif`;
+    ctx.fillText((data.name || '').toUpperCase(), lx, ly); ly += 22*S;
+
+    ctx.fillStyle = '#333';
+    ctx.font = `${10.5*S}px 'Segoe UI', Arial, sans-serif`;
+    ctx.fillText(`S/o. Shri ${data.fatherName || ''}`, lx, ly); ly += 18*S;
+    ctx.fillText(data.phone || '', lx, ly); ly += 18*S;
+    ctx.fillText(`Aadhaar: ${maskAadhaar(data.aadhaar || '')}`, lx, ly); ly += 18*S;
+
+    ctx.font = `bold ${10.5*S}px 'Segoe UI', Arial, sans-serif`;
+    ctx.fillText((data.city  || '').toUpperCase(), lx, ly); ly += 18*S;
+    ctx.fillText((data.state || '').toUpperCase(), lx, ly);
+
+    // ── Footer text ──
+    ctx.fillStyle = '#7a2200';
+    ctx.font = `bold ${11*S}px 'Segoe UI', Arial, sans-serif`;
+    ctx.textAlign = 'left';
+    ctx.fillText(`Membership No. : ${data.membershipNo || ''}`, 16*S, H - 11*S);
+    ctx.textAlign = 'right';
+    ctx.fillText(`Issuing Date : ${data.issuingDate || ''}`, (500-16)*S, H - 11*S);
+}
+
+// ── BACK CARD ────────────────────────────────────────────
+async function drawCardBack(canvas, data) {
+    const S = 3;
+    const W = 500*S, H = 310*S;
+    const ctx = canvas.getContext('2d');
+    await document.fonts.ready;
+    ctx.clearRect(0, 0, W, H);
+
+    const NAVY   = '#1a2d5a';
+    const TEAL   = '#2eb8d0';
+    const GOLD   = '#c8993a';
+    const WHITE  = '#ffffff';
+    const HDR_H  = 64*S;
+    const FTR_H  = 36*S;
+    const RADIUS = 14*S;
+
+    // Card background
+    rr(ctx, 0, 0, W, H, RADIUS);
+    ctx.fillStyle = WHITE;
+    ctx.fill();
+
+    // Header
+    rrTop(ctx, 0, 0, W, HDR_H, RADIUS);
+    ctx.fillStyle = NAVY;
+    ctx.fill();
+
+    // Gold accent line
+    ctx.fillStyle = GOLD;
+    ctx.fillRect(0, HDR_H, W, 3*S);
+
+    // Footer
+    rrBottom(ctx, 0, H - FTR_H, W, FTR_H, RADIUS);
+    ctx.fillStyle = TEAL;
+    ctx.fill();
+
+    // ── Header text (centered) ──
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.font = `${8*S}px 'Segoe UI', Arial, sans-serif`;
+    ctx.fillText('Reg. No. : S/3369/SDM/NW/2018', W/2, 15*S);
+
+    ctx.fillStyle = WHITE;
+    ctx.font = `bold ${17*S}px 'Nirmala UI', 'Arial Unicode MS', sans-serif`;
+    ctx.fillText('अखिल भारतीय माहौर ग्वारे वैश्य महासभा', W/2, 36*S);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.font = `${9*S}px 'Segoe UI', Arial, sans-serif`;
+    ctx.fillText('Akhil Bhartiya Mahour Gware Vaishya Mahasabha', W/2, 52*S);
+
+    // ── Watermark ──
+    const logo = await getLogoImg();
+    if (logo) {
+        ctx.save();
+        ctx.globalAlpha = 0.06;
+        ctx.drawImage(logo, 155*S, 75*S, 190*S, 190*S);
+        ctx.restore();
+    }
+
+    // ── Signature boxes ──
+    const sigY = 88*S, sigW = 170*S, sigH = 85*S, sigR = 8*S;
+    const sig1X = 28*S, sig2X = (500-28-170)*S;
+
+    function drawSigBox(x, y, title, designation) {
+        // Light box background
+        ctx.fillStyle = 'rgba(26,45,90,0.04)';
+        rr(ctx, x, y, sigW, sigH, sigR);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(26,45,90,0.15)';
+        ctx.lineWidth = 1*S;
+        rr(ctx, x, y, sigW, sigH, sigR);
+        ctx.stroke();
+
+        // "Auth. Signature" label
+        ctx.fillStyle = NAVY;
+        ctx.font = `bold ${9*S}px 'Segoe UI', Arial, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(title, x + sigW/2, y + 18*S);
+
+        // Signature line
+        ctx.strokeStyle = '#555';
+        ctx.lineWidth = 1*S;
+        ctx.beginPath();
+        ctx.moveTo(x + 20*S, y + 52*S);
+        ctx.lineTo(x + sigW - 20*S, y + 52*S);
+        ctx.stroke();
+
+        // Designation
+        ctx.fillStyle = '#555';
+        ctx.font = `${8.5*S}px 'Segoe UI', Arial, sans-serif`;
+        ctx.fillText(designation, x + sigW/2, y + 66*S);
+    }
+
+    drawSigBox(sig1X, sigY, 'Auth. Signature', 'National Secretary');
+    drawSigBox(sig2X, sigY, 'Auth. Signature', 'National President');
+
+    // ── Footer contacts ──
+    ctx.fillStyle = NAVY;
+    ctx.font = `${9.5*S}px 'Segoe UI', Arial, sans-serif`;
+    ctx.textAlign = 'left';
+    ctx.fillText('📞 President: 9876543210', 20*S, H - 10*S);
+    ctx.textAlign = 'right';
+    ctx.fillText('📞 Media Prabhari: 9876543210', (500-20)*S, H - 10*S);
+}
+
+// ── Populate card (calls both canvas draw functions) ─────
+async function populateCard(data) {
+    const frontCanvas = document.getElementById('cardFront');
+    const backCanvas  = document.getElementById('cardBack');
+    await Promise.all([
+        drawCardFront(frontCanvas, data),
+        drawCardBack(backCanvas, data)
+    ]);
+}
+
+
 
 // --- Get next membership number (Firebase RTDB transaction) ---
 async function getNextMembershipNo() {
@@ -488,160 +811,72 @@ function formatDate(date) {
     return `${d}/${m}/${y}`;
 }
 
-// --- Render card to canvas: detach from flex parent, capture at exact size, re-attach ---
-async function renderCardToCanvas(sourceEl) {
-    const W = 500, H = 310, S = 3;
-
-    // Remember where this element lives
-    const parent   = sourceEl.parentElement;
-    const nextEl   = sourceEl.nextSibling;
-
-    // Build an isolated off-screen wrapper
-    const wrapper = document.createElement('div');
-    wrapper.style.cssText = [
-        'position:fixed',
-        'top:-9999px',
-        'left:-9999px',
-        `width:${W}px`,
-        `height:${H}px`,
-        'overflow:hidden',
-        'z-index:-9999',
-        'pointer-events:none'
-    ].join(';');
-
-    // Move the real element into the wrapper with forced dimensions
-    const savedStyle = sourceEl.style.cssText;
-    sourceEl.style.cssText = [
-        `width:${W}px`,
-        `min-width:${W}px`,
-        `height:${H}px`,
-        `min-height:${H}px`,
-        `max-height:${H}px`,
-        'transform:none',
-        'position:relative',
-        'overflow:hidden',
-        'border-radius:14px',
-        'flex-shrink:0',
-        'margin:0'
-    ].join('!important;') + '!important';
-
-    wrapper.appendChild(sourceEl);
-    document.body.appendChild(wrapper);
-
-    // Two frames so browser reflows the new layout
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-
-    const canvas = await html2canvas(sourceEl, {
-        scale: S,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: null,
-        logging: false,
-        width: W,
-        height: H
-    });
-
-    // Put element back exactly where it was
-    sourceEl.style.cssText = savedStyle;
-    if (nextEl) {
-        parent.insertBefore(sourceEl, nextEl);
-    } else {
-        parent.appendChild(sourceEl);
-    }
-    document.body.removeChild(wrapper);
-
-    return canvas;
-}
-
-// --- Download PNG ---
+// --- Download PNG: just combine the two canvases directly ---
 async function downloadCardPNG() {
     if (!currentMemberData) {
-        showToast('पहले कार्ड बनाएं! Please generate a card first.', 'error');
-        return;
+        showToast('पहले कार्ड बनाएं!', 'error'); return;
     }
-    showToast('🖼️ PNG बन रहा है... Generating PNG...', 'success');
-
     try {
-        const frontCanvas = await renderCardToCanvas(document.getElementById('cardFront'));
-        const backCanvas  = await renderCardToCanvas(document.getElementById('cardBack'));
+        const fc = document.getElementById('cardFront');
+        const bc = document.getElementById('cardBack');
+        const CW = fc.width, CH = fc.height, GAP = 60;
 
-        // Fixed output size: 500x310 @ scale 3 = 1500x930
-        const CW = 1500, CH = 930, GAP = 60;
-
-        const combined = document.createElement('canvas');
-        combined.width  = CW;
-        combined.height = CH * 2 + GAP;
-        const ctx = combined.getContext('2d');
-
-        ctx.fillStyle = '#e0e0e0';
-        ctx.fillRect(0, 0, combined.width, combined.height);
-
-        // Draw both cards at consistent fixed size
-        ctx.drawImage(frontCanvas, 0, 0, CW, CH);
-        ctx.drawImage(backCanvas,  0, CH + GAP, CW, CH);
+        const out = document.createElement('canvas');
+        out.width  = CW;
+        out.height = CH * 2 + GAP;
+        const ctx = out.getContext('2d');
+        ctx.fillStyle = '#1a2d5a';
+        ctx.fillRect(0, 0, out.width, out.height);
+        ctx.drawImage(fc, 0, 0);
+        ctx.drawImage(bc, 0, CH + GAP);
 
         const safeName = (currentMemberData.name || 'member').replace(/\s+/g, '_');
-        const link = document.createElement('a');
-        link.download = `ABMGVM_Card_${safeName}.png`;
-        link.href = combined.toDataURL('image/png');
-        link.click();
-
-        showToast('✅ PNG डाउनलोड हो गया! PNG Downloaded!', 'success');
-    } catch (err) {
-        console.error('PNG download error:', err);
-        showToast('PNG डाउनलोड में त्रुटि! Error downloading PNG.', 'error');
+        const a = document.createElement('a');
+        a.download = `ABMGVM_Card_${safeName}.png`;
+        a.href = out.toDataURL('image/png');
+        a.click();
+        showToast('✅ PNG Downloaded!', 'success');
+    } catch(e) {
+        console.error(e);
+        showToast('Error downloading PNG', 'error');
     }
 }
 
-// --- Download PDF ---
+// --- Download PDF: same canvases → jsPDF ---
 async function downloadCardPDF() {
     if (!currentMemberData) {
-        showToast('पहले कार्ड बनाएं! Please generate a card first.', 'error');
-        return;
+        showToast('पहले कार्ड बनाएं!', 'error'); return;
     }
-    showToast('📄 PDF बन रहा है... Generating PDF...', 'success');
-
     try {
         const { jsPDF } = window.jspdf;
+        const fc = document.getElementById('cardFront');
+        const bc = document.getElementById('cardBack');
 
-        const frontCanvas = await renderCardToCanvas(document.getElementById('cardFront'));
-        const backCanvas  = await renderCardToCanvas(document.getElementById('cardBack'));
-
-        // Standard ID card size in mm
-        const cardW = 85.6;
-        const cardH = 53.98;
-
-        const pdf = new jsPDF('p', 'mm', 'a4');
+        const cardW = 85.6, cardH = 53.98;
+        const pdf   = new jsPDF('p', 'mm', 'a4');
         const pageW = pdf.internal.pageSize.getWidth();
         const pageH = pdf.internal.pageSize.getHeight();
-        const xOffset = (pageW - cardW) / 2;
-        let yOffset = 30;
+        const xOff  = (pageW - cardW) / 2;
 
-        pdf.setFontSize(12);
-        pdf.setTextColor(26, 45, 90);
-        pdf.text('Akhil Bhartiya Mahour Gware Vaishya Mahasabha', pageW / 2, 15, { align: 'center' });
-        pdf.setFontSize(9);
-        pdf.text('Membership Card — Front & Back', pageW / 2, 22, { align: 'center' });
+        pdf.setFillColor(245, 245, 245);
+        pdf.rect(0, 0, pageW, pageH, 'F');
 
-        // Always place at exact cardW x cardH — avoids any size mismatch from capture
-        pdf.addImage(frontCanvas.toDataURL('image/png'), 'PNG', xOffset, yOffset, cardW, cardH);
-        yOffset += cardH + 15;
-        pdf.addImage(backCanvas.toDataURL('image/png'),  'PNG', xOffset, yOffset, cardW, cardH);
+        pdf.setFontSize(11); pdf.setTextColor(26, 45, 90);
+        pdf.text('Akhil Bhartiya Mahour Gware Vaishya Mahasabha', pageW/2, 14, { align:'center' });
+        pdf.setFontSize(8); pdf.setTextColor(80, 80, 80);
+        pdf.text('Membership Card', pageW/2, 20, { align:'center' });
 
-        pdf.setFontSize(7);
-        pdf.setTextColor(150, 150, 150);
-        pdf.text('Generated by ABMGVM Card Maker', pageW / 2, pageH - 10, { align: 'center' });
+        pdf.addImage(fc.toDataURL('image/png'), 'PNG', xOff, 26, cardW, cardH);
+        pdf.addImage(bc.toDataURL('image/png'), 'PNG', xOff, 26 + cardH + 12, cardW, cardH);
 
         const safeName = (currentMemberData.name || 'member').replace(/\s+/g, '_');
         pdf.save(`ABMGVM_Card_${safeName}.pdf`);
-
-        showToast('✅ PDF डाउनलोड हो गया! PDF Downloaded!', 'success');
-    } catch (err) {
-        console.error('PDF download error:', err);
-        showToast('PDF डाउनलोड में त्रुटि! Error downloading PDF.', 'error');
+        showToast('✅ PDF Downloaded!', 'success');
+    } catch(e) {
+        console.error(e);
+        showToast('Error downloading PDF', 'error');
     }
 }
-
 
 
 // --- Toast notification ---
