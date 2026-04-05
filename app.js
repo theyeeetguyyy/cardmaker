@@ -117,9 +117,12 @@ async function checkDuplicate(aadhaarNo, phoneNo) {
 // --- Find Card Logic ---
 function openFindModal() {
     document.getElementById('findModal').classList.add('visible');
-    document.getElementById('findPhone').value = '';
+    document.getElementById('findPhone').value = '+91 ';
     document.getElementById('findAadhaar').value = '';
+    document.getElementById('findPhone').focus();
 }
+
+
 
 function closeFindModal() {
     document.getElementById('findModal').classList.remove('visible');
@@ -137,16 +140,8 @@ async function submitFindCard(e) {
     const aadhaarQuery = document.getElementById('findAadhaar').value.trim();
     const btn = document.getElementById('btnFindCardSearch');
 
-    // Format phone exactly as we do in the input
-    let valPhone = phoneQuery.replace(/[^\d+]/g, '');
-    if (!valPhone.startsWith('+91') && !valPhone.startsWith('+')) {
-        if (valPhone.startsWith('91') && valPhone.length > 10) {
-            valPhone = '+' + valPhone;
-        } else if (valPhone.length <= 10) {
-            valPhone = '+91 ' + valPhone;
-        }
-    }
-    phoneQuery = valPhone;
+    // Normalize: keep only last 10 digits for comparison
+    const phoneDigits = phoneQuery.replace(/\D/g, '').slice(-10);
 
     // Format aadhaar exactly as we do in the input
     let valAadhaar = aadhaarQuery.replace(/\D/g, '');
@@ -176,7 +171,8 @@ async function submitFindCard(e) {
         let foundMember = null;
         let foundKey = null;
         snapshot.forEach(child => {
-            if (child.val().phone === phoneQuery) {
+            const dbPhoneDigits = (child.val().phone || '').replace(/\D/g, '').slice(-10);
+            if (dbPhoneDigits === phoneDigits) {
                 foundMember = child.val();
                 foundKey = child.key;
             }
