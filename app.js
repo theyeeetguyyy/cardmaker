@@ -366,6 +366,19 @@ function getLogoImg() {
 }
 
 
+// Cached president image
+let _presidentImg = null;
+function getPresidentImg() {
+    if (_presidentImg) return Promise.resolve(_presidentImg);
+    return new Promise(resolve => {
+        const img = new Image();
+        img.onload  = () => { _presidentImg = img; resolve(img); };
+        img.onerror = () => resolve(null);
+        img.crossOrigin = 'anonymous';
+        img.src = 'assets/president.jpeg';
+    });
+}
+
 // Cached president signature
 let _presidentSigImg = null;
 function getPresidentSigImg() {
@@ -742,6 +755,26 @@ async function drawCardBack(canvas, data) {
     ctx.fillStyle = '#555';
     ctx.font = `${6.5*S}px 'Segoe UI', Arial, sans-serif`;
     ctx.fillText('(National President)', sig2X + sigW/2, sigY + 72*S);
+
+    // ── President Photo (Center Gap) ──
+    const presImg = await getPresidentImg();
+    if (presImg) {
+        const pW = 60 * S;
+        const pH = 76 * S;
+        const pX = 250 * S - pW / 2;
+        const pY = sigY + 2 * S;
+        
+        ctx.save();
+        // Border
+        ctx.lineWidth = 1.5 * S;
+        ctx.strokeStyle = '#FF9933';
+        rr(ctx, pX, pY, pW, pH, 4*S);
+        ctx.stroke();
+        
+        ctx.clip();
+        ctx.drawImage(presImg, pX, pY, pW, pH);
+        ctx.restore();
+    }
 
     // ── Instructions ──
     const instY = sigY + sigH + 16*S; 

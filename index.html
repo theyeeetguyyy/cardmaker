@@ -7,8 +7,8 @@
     <meta name="description" content="अखिल भारतीय माहौर ग्वारे वैश्य महासभा (पंजीकृत) - सदस्यता कार्ड बनाएं। Akhil Bhartiya Mahour Gware Vaishya Mahasabha Membership Card Generator.">
     <link rel="stylesheet" href="style.css?v=3.0">
     <style>
-        .card-canvases { display:flex; gap:24px; flex-wrap:wrap; justify-content:center; margin:20px 0; }
-        #cardFront, #cardBack  { width:500px; height:310px; border-radius:14px; box-shadow:0 8px 32px rgba(0,0,0,0.25); display:block; }
+        .card-canvases { display:flex; flex-direction:column; align-items:center; gap:24px; margin:20px 0; width: 100%; overflow: hidden; }
+        #cardFront, #cardBack  { max-width:100%; height:auto; border-radius:14px; box-shadow:0 8px 32px rgba(0,0,0,0.25); display:block; }
     </style>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -179,6 +179,6 @@
     <div class="toast" id="toast"></div>
 
     <script src="firebase-config.js"></script>
-    <script src="app.js?v=5.5"></script>
+    <script src="app.js?v=5.6"></script>
 </body>
 </html>
