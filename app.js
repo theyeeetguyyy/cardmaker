@@ -375,7 +375,7 @@ function getPresidentSigImg() {
         img.onload  = () => { _presidentSigImg = img; resolve(img); };
         img.onerror = () => resolve(null);
         img.crossOrigin = 'anonymous';
-        img.src = 'assets/president-signature.jpeg';
+        img.src = 'assets/president-signature.png';
     });
 }
 
@@ -717,8 +717,6 @@ async function drawCardBack(canvas, data) {
         ctx.save();
         rr(ctx, sig2X, sigY, sigW, sigH, sigR); // clip to box
         ctx.clip();
-        ctx.globalCompositeOperation = 'multiply'; 
-        
         const siw = sigImg.naturalWidth || sigImg.width;
         const sih = sigImg.naturalHeight || sigImg.height;
         // Trim some margins
