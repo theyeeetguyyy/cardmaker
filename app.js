@@ -720,9 +720,9 @@ async function drawCardBack(canvas, data) {
         const siw = sigImg.naturalWidth || sigImg.width;
         const sih = sigImg.naturalHeight || sigImg.height;
         // Trim some margins
-        const maxW = sigW - 10*S;
+        const maxW = sigW - 20*S; // More margin
         const maxH = 40*S;
-        const scale = Math.min(maxW / siw, maxH / sih) * 1.5; 
+        const scale = Math.min(maxW / siw, maxH / sih); 
         const dw = siw * scale;
         const dh = sih * scale;
         const dx = sig2X + (sigW - dw)/2;
