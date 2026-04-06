@@ -354,18 +354,6 @@ function getLogoImg() {
     });
 }
 
-// Cached president photo
-let _presidentImg = null;
-function getPresidentImg() {
-    if (_presidentImg) return Promise.resolve(_presidentImg);
-    return new Promise(resolve => {
-        const img = new Image();
-        img.onload  = () => { _presidentImg = img; resolve(img); };
-        img.onerror = () => resolve(null);
-        img.crossOrigin = 'anonymous';
-        img.src = 'assets/president.jpeg';
-    });
-}
 
 // Cached president signature
 let _presidentSigImg = null;
@@ -622,37 +610,20 @@ async function drawCardBack(canvas, data) {
     ctx.fillStyle = TEAL;
     ctx.fill();
 
-    // ── Header text (centered) ──
+    // ── Header logos ──
     const logo = await getLogoImg();
-    // Left logo in header
     if (logo) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(36*S, 32*S, 22*S, 0, Math.PI * 2);
-        ctx.clip();
-        ctx.drawImage(logo, 14*S, 10*S, 44*S, 44*S);
-        ctx.restore();
-        ctx.beginPath();
-        ctx.arc(36*S, 32*S, 22*S, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-        ctx.lineWidth = 1.5*S;
-        ctx.stroke();
-    }
-    // Right logo in header
-    if (logo) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc((500-36)*S, 32*S, 22*S, 0, Math.PI * 2);
-        ctx.clip();
-        ctx.drawImage(logo, (500-58)*S, 10*S, 44*S, 44*S);
-        ctx.restore();
-        ctx.beginPath();
-        ctx.arc((500-36)*S, 32*S, 22*S, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-        ctx.lineWidth = 1.5*S;
-        ctx.stroke();
+        // Left
+        ctx.save(); ctx.beginPath(); ctx.arc(36*S, 32*S, 22*S, 0, Math.PI * 2); ctx.clip();
+        ctx.drawImage(logo, 14*S, 10*S, 44*S, 44*S); ctx.restore();
+        ctx.beginPath(); ctx.arc(36*S, 32*S, 22*S, 0, Math.PI * 2); ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1.5*S; ctx.stroke();
+        // Right
+        ctx.save(); ctx.beginPath(); ctx.arc((500-36)*S, 32*S, 22*S, 0, Math.PI * 2); ctx.clip();
+        ctx.drawImage(logo, (500-58)*S, 10*S, 44*S, 44*S); ctx.restore();
+        ctx.beginPath(); ctx.arc((500-36)*S, 32*S, 22*S, 0, Math.PI * 2); ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1.5*S; ctx.stroke();
     }
 
+    // ── Header text ──
     ctx.textAlign = 'center';
     ctx.fillStyle = 'rgba(255,255,255,0.55)';
     ctx.font = `${7.5*S}px 'Segoe UI', Arial, sans-serif`;
@@ -666,177 +637,115 @@ async function drawCardBack(canvas, data) {
     ctx.font = `${8.5*S}px 'Segoe UI', Arial, sans-serif`;
     ctx.fillText('Akhil Bhartiya Mahour Gware Vaishya Mahasabha', W/2, 50*S);
 
-    // ── Watermark (faint logo center) ──
+    // ── Watermark (center) ──
     if (logo) {
         ctx.save();
-        ctx.globalAlpha = 0.04;
-        ctx.drawImage(logo, 175*S, 90*S, 150*S, 150*S);
+        ctx.globalAlpha = 0.05;
+        ctx.drawImage(logo, 160*S, 85*S, 180*S, 180*S);
         ctx.restore();
     }
 
-    // ═══════════════════════════════════════════════
-    // BODY: President photo + signature on LEFT
-    //        Address on RIGHT
-    // ═══════════════════════════════════════════════
-
-    const bodyTop = HDR_H + 6*S;
-
-    // ── President Photo (circular, left side) ──
-    const presidentImg = await getPresidentImg();
-    const presCX = 70*S;                 // center X
-    const presCY = bodyTop + 42*S;       // center Y
-    const presR  = 34*S;                 // radius
-
-    if (presidentImg) {
-        // Circular clip for president photo
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(presCX, presCY, presR, 0, Math.PI * 2);
-        ctx.clip();
-        const piw = presidentImg.naturalWidth  || presidentImg.width;
-        const pih = presidentImg.naturalHeight || presidentImg.height;
-        const pScale = Math.max((presR*2) / piw, (presR*2) / pih);
-        const pdw = piw * pScale, pdh = pih * pScale;
-        const pdx = presCX - pdw/2, pdy = presCY - pdh/2;
-        ctx.drawImage(presidentImg, pdx, pdy, pdw, pdh);
-        ctx.restore();
-
-        // Gold ring around photo
-        ctx.beginPath();
-        ctx.arc(presCX, presCY, presR, 0, Math.PI * 2);
-        ctx.strokeStyle = GOLD;
-        ctx.lineWidth = 2.5*S;
-        ctx.stroke();
-    }
-
-    // ── Signature image below president photo ──
-    const sigImg = await getPresidentSigImg();
-    const sigImgY = presCY + presR + 6*S;
-    const sigImgW = 90*S;
-    const sigImgH = 32*S;
-    const sigImgX = presCX - sigImgW/2;
-
-    if (sigImg) {
-        ctx.save();
-        rr(ctx, sigImgX, sigImgY, sigImgW, sigImgH, 4*S);
-        ctx.clip();
-        // Draw signature centered within the box
-        const siw = sigImg.naturalWidth  || sigImg.width;
-        const sih = sigImg.naturalHeight || sigImg.height;
-        const sScale = Math.min(sigImgW / siw, sigImgH / sih) * 0.9;
-        const sdw = siw * sScale, sdh = sih * sScale;
-        const sdx = sigImgX + (sigImgW - sdw) / 2;
-        const sdy = sigImgY + (sigImgH - sdh) / 2;
-        ctx.drawImage(sigImg, sdx, sdy, sdw, sdh);
-        ctx.restore();
-    }
-
-    // Name + designation text below signature
+    // ── Address Section (Top Center) ──
+    let addrY = HDR_H + 18*S;
     ctx.textAlign = 'center';
-    ctx.fillStyle = NAVY;
-    ctx.font = `bold ${8.5*S}px 'Nirmala UI', 'Arial Unicode MS', sans-serif`;
-    ctx.fillText('प्रकाश चंद्र मांडिल', presCX, sigImgY + sigImgH + 12*S);
-
     ctx.fillStyle = MAROON;
-    ctx.font = `bold ${7.5*S}px 'Segoe UI', Arial, sans-serif`;
-    ctx.fillText('राष्ट्रीय अध्यक्ष', presCX, sigImgY + sigImgH + 24*S);
-
-    ctx.fillStyle = '#555';
-    ctx.font = `${7*S}px 'Segoe UI', Arial, sans-serif`;
-    ctx.fillText('National President', presCX, sigImgY + sigImgH + 34*S);
-
-    // ── Decorative vertical gold divider ──
-    const divX = 150*S;
-    ctx.strokeStyle = GOLD;
-    ctx.lineWidth = 1.5*S;
-    ctx.beginPath();
-    ctx.moveTo(divX, bodyTop + 8*S);
-    ctx.lineTo(divX, H - FTR_H - 8*S);
-    ctx.stroke();
-    // Small diamond ornaments at top and bottom of divider
-    function drawDiamond(cx, cy, size) {
-        ctx.fillStyle = GOLD;
-        ctx.beginPath();
-        ctx.moveTo(cx, cy - size);
-        ctx.lineTo(cx + size, cy);
-        ctx.lineTo(cx, cy + size);
-        ctx.lineTo(cx - size, cy);
-        ctx.closePath();
-        ctx.fill();
-    }
-    drawDiamond(divX, bodyTop + 8*S, 3*S);
-    drawDiamond(divX, H - FTR_H - 8*S, 3*S);
-
-    // ── Address Section (right side) ──
-    const addrX = 165*S;
-    const addrMaxW = W - addrX - 16*S;
-    let addrY = bodyTop + 14*S;
-
-    // "कार्यालय का पता" heading
-    ctx.textAlign = 'left';
-    ctx.fillStyle = MAROON;
-    ctx.font = `bold ${10*S}px 'Nirmala UI', 'Arial Unicode MS', sans-serif`;
-    ctx.fillText('कार्यालय का पता :', addrX, addrY);
-    addrY += 15*S;
-
-    // Address line with 📍 icon
-    ctx.fillStyle = NAVY;
-    ctx.font = `${9*S}px 'Nirmala UI', 'Arial Unicode MS', sans-serif`;
-
-    // Multi-line address
-    const addressLines = [
-        '65 पंचवटी वरूण नगर,',
-        'रोशनी घर के पीछे, लश्कर,',
-        'ग्वालियर (म.प.)'
-    ];
-    addressLines.forEach(line => {
-        ctx.fillText(line, addrX + 4*S, addrY);
-        addrY += 14*S;
-    });
-
-    addrY += 4*S;
-
-    // Office address in English
+    ctx.font = `bold ${9*S}px 'Nirmala UI', 'Arial Unicode MS', sans-serif`;
+    ctx.fillText('कार्यालय का पता : 65 पंचवटी वरूण नगर, रोशनी घर के पीछे, लश्कर, ग्वालियर (म.प्र.)', W/2, addrY);
+    
     ctx.fillStyle = '#666';
     ctx.font = `${7.5*S}px 'Segoe UI', Arial, sans-serif`;
-    const engAddressLines = [
-        '65 Panchvati, Varun Nagar,',
-        'Behind Roshni Ghar, Lashkar,',
-        'Gwalior (M.P.)'
-    ];
-    engAddressLines.forEach(line => {
-        ctx.fillText(line, addrX + 4*S, addrY);
-        addrY += 12*S;
-    });
+    ctx.fillText('Office: 65 Panchvati, Varun Nagar, Behind Roshni Ghar, Lashkar, Gwalior (M.P.)', W/2, addrY + 12*S);
 
-    addrY += 6*S;
+    // ── Signature Boxes ──
+    const sigY = addrY + 28*S; // y = ~122
+    const sigW = 160*S;
+    const sigH = 80*S;
+    const sig1X = 50*S; // left box
+    const sig2X = (500 - 50 - 160)*S; // right box
+    const sigR = 6*S;
 
-    // ── Thin accent line separator ──
-    ctx.strokeStyle = 'rgba(26,45,90,0.12)';
+    // Left Box: MEMBER SIGNATURE
+    ctx.fillStyle = 'rgba(26,45,90,0.03)';
+    rr(ctx, sig1X, sigY, sigW, sigH, sigR);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(26,45,90,0.1)';
+    ctx.lineWidth = 1*S;
+    rr(ctx, sig1X, sigY, sigW, sigH, sigR);
+    ctx.stroke();
+
+    ctx.fillStyle = NAVY;
+    ctx.font = `bold ${8.5*S}px 'Segoe UI', Arial, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText('MEMBER SIGNATURE', sig1X + sigW/2, sigY + 16*S);
+
+    // Blank line
+    ctx.strokeStyle = '#666';
     ctx.lineWidth = 1*S;
     ctx.beginPath();
-    ctx.moveTo(addrX, addrY);
-    ctx.lineTo(W - 20*S, addrY);
+    ctx.moveTo(sig1X + 15*S, sigY + 60*S);
+    ctx.lineTo(sig1X + sigW - 15*S, sigY + 60*S);
     ctx.stroke();
-    addrY += 10*S;
 
-    // ── Instructions (compact) ──
+    // Right Box: AUTH. SIGNATURE
+    ctx.fillStyle = 'rgba(26,45,90,0.03)';
+    rr(ctx, sig2X, sigY, sigW, sigH, sigR);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(26,45,90,0.1)';
+    ctx.lineWidth = 1*S;
+    rr(ctx, sig2X, sigY, sigW, sigH, sigR);
+    ctx.stroke();
+
     ctx.fillStyle = NAVY;
-    ctx.font = `bold ${8*S}px 'Segoe UI', Arial, sans-serif`;
-    ctx.fillText('Instruction :', addrX + 4*S, addrY);
-    addrY += 12*S;
+    ctx.font = `bold ${8.5*S}px 'Segoe UI', Arial, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText('AUTH. SIGNATURE', sig2X + sigW/2, sigY + 16*S);
+
+    // President Signature Image (with multiply blending to remove white background)
+    const sigImg = await getPresidentSigImg();
+    if (sigImg) {
+        ctx.save();
+        rr(ctx, sig2X, sigY, sigW, sigH, sigR); // clip to box
+        ctx.clip();
+        ctx.globalCompositeOperation = 'multiply'; 
+        
+        const siw = sigImg.naturalWidth || sigImg.width;
+        const sih = sigImg.naturalHeight || sigImg.height;
+        // Trim some margins
+        const maxW = sigW - 10*S;
+        const maxH = 40*S;
+        const scale = Math.min(maxW / siw, maxH / sih) * 1.5; 
+        const dw = siw * scale;
+        const dh = sih * scale;
+        const dx = sig2X + (sigW - dw)/2;
+        const dy = sigY + 22*S + (maxH - dh)/2;
+
+        ctx.drawImage(sigImg, dx, dy, dw, dh);
+        ctx.restore();
+    } else {
+        // Fallback line
+        ctx.beginPath(); ctx.moveTo(sig2X + 15*S, sigY + 50*S); ctx.lineTo(sig2X + sigW - 15*S, sigY + 50*S); ctx.stroke();
+    }
+
+    ctx.fillStyle = NAVY;
+    ctx.font = `bold ${8*S}px 'Nirmala UI', 'Arial Unicode MS', sans-serif`;
+    ctx.fillText('प्रकाश चंद्र मांडिल', sig2X + sigW/2, sigY + 62*S);
 
     ctx.fillStyle = '#555';
     ctx.font = `${6.5*S}px 'Segoe UI', Arial, sans-serif`;
-    const instrLines = [
-        'This card is property of A.B.M.G.V.M.',
-        'and is nontransferable. If found, please',
-        'contact at the above address.'
-    ];
-    instrLines.forEach(line => {
-        ctx.fillText(line, addrX + 4*S, addrY);
-        addrY += 10*S;
-    });
+    ctx.fillText('(National President)', sig2X + sigW/2, sigY + 72*S);
+
+    // ── Instructions ──
+    const instY = sigY + sigH + 16*S; 
+    ctx.textAlign = 'left';
+    ctx.fillStyle = NAVY;
+    ctx.font = `bold ${8.5*S}px 'Segoe UI', Arial, sans-serif`;
+    ctx.fillText('Instruction :', 20*S, instY);
+
+    ctx.fillStyle = '#555';
+    ctx.font = `${6.5*S}px 'Segoe UI', Arial, sans-serif`;
+    ctx.fillText('This card is property of Akhil Bhartiya Mahour Gware Vaishya Mahasabha and is nontransferable.', 20*S, instY + 12*S);
+    ctx.fillText('The use of this card is governed by the terms and conditions of A.B.M.G.V.M registered legislation.', 20*S, instY + 22*S);
+    ctx.fillText('If found, please return to the office address mentioned above.', 20*S, instY + 32*S);
 
     // ── Footer contacts ──
     ctx.fillStyle = WHITE;
@@ -1056,7 +965,7 @@ async function downloadCardPDF() {
         showToast('Error downloading PDF', 'error');
     }
 }
-
+ 
 
 // --- Toast notification ---
 function showToast(message, type = 'success') {
