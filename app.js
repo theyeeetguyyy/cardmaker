@@ -530,7 +530,7 @@ async function drawCardFront(canvas, data) {
     ctx.fillText('Akhil Bhartiya Mahour Gware Vaishya Mahasabha', W/2, 54*S);
 
     // ── Right logo (tarazu, right side) ──
-    const tarazuLogo = await loadImg('assets/tarazu-logo.jpeg');
+    const tarazuLogo = await loadImg('assets/tarazu.png');
     if (tarazuLogo) {
         ctx.save();
         ctx.beginPath();
@@ -655,7 +655,7 @@ async function drawCardBack(canvas, data) {
         ctx.drawImage(logo, 14*S, 10*S, 44*S, 44*S); ctx.restore();
         ctx.beginPath(); ctx.arc(36*S, 32*S, 22*S, 0, Math.PI * 2); ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1.5*S; ctx.stroke();
         // Right
-        const tarazuLogo = await loadImg('assets/tarazu-logo.jpeg');
+        const tarazuLogo = await loadImg('assets/tarazu.png');
         if (tarazuLogo) {
             ctx.save(); ctx.beginPath(); ctx.arc((500-36)*S, 32*S, 22*S, 0, Math.PI * 2); ctx.clip();
             ctx.drawImage(tarazuLogo, (500-58)*S, 10*S, 44*S, 44*S); ctx.restore();
@@ -787,7 +787,7 @@ async function drawCardBack(canvas, data) {
     ctx.fillText('SECRETARY SIGN', sig3X + sigW/2, sigY + 16*S);
 
     // Secretary Signature Image
-    const secSigImg = await loadImg('assets/sec-signature.png');
+    const secSigImg = await loadImg('assets/sectry- signature.png');
     if (secSigImg) {
         ctx.save();
         rr(ctx, sig3X, sigY, sigW, sigH, sigR); // clip to box
