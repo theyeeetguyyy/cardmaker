@@ -205,6 +205,8 @@ async function submitFindCard(e) {
         // Pre-fill form fields
         document.getElementById('memberName').value = currentMemberData.name || '';
         document.getElementById('fatherName').value = currentMemberData.fatherName || '';
+        document.getElementById('dob').value = currentMemberData.dob || '';
+        document.getElementById('gender').value = currentMemberData.gender || '';
         document.getElementById('aadhaarNo').value = currentMemberData.aadhaar || '';
         document.getElementById('phoneNo').value = currentMemberData.phone || '';
         document.getElementById('city').value = currentMemberData.city || '';
@@ -245,6 +247,8 @@ if (cardForm) {
     // Collect data
     const memberName = document.getElementById('memberName').value.trim();
     const fatherName = document.getElementById('fatherName').value.trim();
+    const dob = document.getElementById('dob').value;
+    const gender = document.getElementById('gender').value;
     const aadhaarNo = document.getElementById('aadhaarNo').value.trim();
     const phoneNo = document.getElementById('phoneNo').value.trim();
     const city = document.getElementById('city').value.trim();
@@ -277,6 +281,8 @@ if (cardForm) {
             // --- EDIT MODE: Update existing card ---
             currentMemberData.name = memberName;
             currentMemberData.fatherName = fatherName;
+            currentMemberData.dob = dob;
+            currentMemberData.gender = gender;
             currentMemberData.aadhaar = aadhaarNo;
             currentMemberData.phone = phoneNo;
             currentMemberData.city = city;
@@ -306,6 +312,8 @@ if (cardForm) {
             currentMemberData = {
                 name: memberName,
                 fatherName: fatherName,
+                dob: dob,
+                gender: gender,
                 aadhaar: aadhaarNo,
                 phone: phoneNo,
                 city: city,
@@ -515,19 +523,20 @@ async function drawCardFront(canvas, data) {
 
     ctx.fillStyle = WHITE;
     ctx.font = `bold ${17*S}px 'Nirmala UI', 'Arial Unicode MS', sans-serif`;
-    ctx.fillText('अखिल भारतीय माहौर ग्वारे वैश्य महासभा', W/2, 38*S);
+    ctx.fillText('अखिल भारतीय माहौर ग्वारे वैश्य महासभा®', W/2, 38*S);
 
     ctx.fillStyle = 'rgba(255,255,255,0.75)';
     ctx.font = `${9*S}px 'Segoe UI', Arial, sans-serif`;
     ctx.fillText('Akhil Bhartiya Mahour Gware Vaishya Mahasabha', W/2, 54*S);
 
-    // ── Right logo (same logo, right side) ──
-    if (logo) {
+    // ── Right logo (tarazu, right side) ──
+    const tarazuLogo = await loadImg('assets/tarazu-logo.jpeg');
+    if (tarazuLogo) {
         ctx.save();
         ctx.beginPath();
         ctx.arc((500-36)*S, 36*S, 26*S, 0, Math.PI * 2);
         ctx.clip();
-        ctx.drawImage(logo, (500-62)*S, 10*S, 52*S, 52*S);
+        ctx.drawImage(tarazuLogo, (500-62)*S, 10*S, 52*S, 52*S);
         ctx.restore();
         ctx.beginPath();
         ctx.arc((500-36)*S, 36*S, 26*S, 0, Math.PI * 2);
@@ -546,7 +555,7 @@ async function drawCardFront(canvas, data) {
 
     // ── Member type badge ──
     ctx.fillStyle = '#138808';
-    ctx.font = `bold ${11.5*S}px 'Segoe UI', Arial, sans-serif`;
+    ctx.font = `bold ${13.5*S}px 'Segoe UI', Arial, sans-serif`;
     ctx.textAlign = 'center';
     ctx.fillText('✦  General Member  ✦', W/2, 92*S);
 
@@ -581,12 +590,16 @@ async function drawCardFront(canvas, data) {
 
     ctx.fillStyle = '#333';
     ctx.font = `${10.5*S}px 'Segoe UI', Arial, sans-serif`;
-    ctx.fillText(`S/o. Shri ${data.fatherName || ''}`, lx, ly); ly += 18*S;
-    ctx.fillText(data.phone || '', lx, ly); ly += 18*S;
-    ctx.fillText(`Aadhaar: ${maskAadhaar(data.aadhaar || '')}`, lx, ly); ly += 18*S;
+    ctx.fillText(`S/o. Shri ${data.fatherName || ''}`, lx, ly); ly += 15.5*S;
+    
+    let dobText = data.dob ? data.dob.split('-').reverse().join('/') : '';
+    ctx.fillText(`DOB: ${dobText}   Gender: ${data.gender || ''}`, lx, ly); ly += 15.5*S;
+    
+    ctx.fillText(data.phone || '', lx, ly); ly += 15.5*S;
+    ctx.fillText(`Aadhaar: ${maskAadhaar(data.aadhaar || '')}`, lx, ly); ly += 15.5*S;
 
     ctx.font = `bold ${10.5*S}px 'Segoe UI', Arial, sans-serif`;
-    ctx.fillText((data.city  || '').toUpperCase(), lx, ly); ly += 18*S;
+    ctx.fillText((data.city  || '').toUpperCase(), lx, ly); ly += 15.5*S;
     ctx.fillText((data.state || '').toUpperCase(), lx, ly);
 
     // ── Footer text ──
@@ -642,9 +655,12 @@ async function drawCardBack(canvas, data) {
         ctx.drawImage(logo, 14*S, 10*S, 44*S, 44*S); ctx.restore();
         ctx.beginPath(); ctx.arc(36*S, 32*S, 22*S, 0, Math.PI * 2); ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1.5*S; ctx.stroke();
         // Right
-        ctx.save(); ctx.beginPath(); ctx.arc((500-36)*S, 32*S, 22*S, 0, Math.PI * 2); ctx.clip();
-        ctx.drawImage(logo, (500-58)*S, 10*S, 44*S, 44*S); ctx.restore();
-        ctx.beginPath(); ctx.arc((500-36)*S, 32*S, 22*S, 0, Math.PI * 2); ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1.5*S; ctx.stroke();
+        const tarazuLogo = await loadImg('assets/tarazu-logo.jpeg');
+        if (tarazuLogo) {
+            ctx.save(); ctx.beginPath(); ctx.arc((500-36)*S, 32*S, 22*S, 0, Math.PI * 2); ctx.clip();
+            ctx.drawImage(tarazuLogo, (500-58)*S, 10*S, 44*S, 44*S); ctx.restore();
+            ctx.beginPath(); ctx.arc((500-36)*S, 32*S, 22*S, 0, Math.PI * 2); ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1.5*S; ctx.stroke();
+        }
     }
 
     // ── Header text ──
@@ -655,7 +671,7 @@ async function drawCardBack(canvas, data) {
 
     ctx.fillStyle = WHITE;
     ctx.font = `bold ${16*S}px 'Nirmala UI', 'Arial Unicode MS', sans-serif`;
-    ctx.fillText('अखिल भारतीय माहौर ग्वारे वैश्य महासभा', W/2, 35*S);
+    ctx.fillText('अखिल भारतीय माहौर ग्वारे वैश्य महासभा®', W/2, 35*S);
 
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
     ctx.font = `${8.5*S}px 'Segoe UI', Arial, sans-serif`;
@@ -673,22 +689,23 @@ async function drawCardBack(canvas, data) {
     let addrY = HDR_H + 18*S;
     ctx.textAlign = 'center';
     ctx.fillStyle = MAROON;
-    ctx.font = `bold ${9*S}px 'Nirmala UI', 'Arial Unicode MS', sans-serif`;
-    ctx.fillText('कार्यालय का पता : 65 पंचवटी वरूण नगर, रोशनी घर के पीछे, लश्कर, ग्वालियर (म.प्र.)', W/2, addrY);
+    ctx.font = `bold ${10.5*S}px 'Nirmala UI', 'Arial Unicode MS', sans-serif`;
+    ctx.fillText('कार्यालय का पता : 65 पंचवटी वस्त्र नगर, रोशनी घर के पीछे, लश्कर, ग्वालियर (म.प्र.) - 474001', W/2, addrY);
     
     ctx.fillStyle = '#666';
-    ctx.font = `${7.5*S}px 'Segoe UI', Arial, sans-serif`;
-    ctx.fillText('Office: 65 Panchvati, Varun Nagar, Behind Roshni Ghar, Lashkar, Gwalior (M.P.)', W/2, addrY + 12*S);
+    ctx.font = `${8*S}px 'Segoe UI', Arial, sans-serif`;
+    ctx.fillText('Office: 65 Panchvati, Vastra Nagar, Behind Roshni Ghar, Lashkar, Gwalior (M.P.) - 474001', W/2, addrY + 14*S);
 
     // ── Signature Boxes ──
-    const sigY = addrY + 28*S; // y = ~122
-    const sigW = 160*S;
-    const sigH = 80*S;
-    const sig1X = 50*S; // left box
-    const sig2X = (500 - 50 - 160)*S; // right box
+    const sigY = addrY + 30*S; 
+    const sigW = 135*S;
+    const sigH = 75*S;
+    const sig1X = 25*S; // left box
+    const sig2X = 182.5*S; // center box
+    const sig3X = 340*S; // right box
     const sigR = 6*S;
 
-    // Left Box: MEMBER SIGNATURE
+    // BOX 1: MEMBER SIGNATURE
     ctx.fillStyle = 'rgba(26,45,90,0.03)';
     rr(ctx, sig1X, sigY, sigW, sigH, sigR);
     ctx.fill();
@@ -706,11 +723,11 @@ async function drawCardBack(canvas, data) {
     ctx.strokeStyle = '#666';
     ctx.lineWidth = 1*S;
     ctx.beginPath();
-    ctx.moveTo(sig1X + 15*S, sigY + 60*S);
-    ctx.lineTo(sig1X + sigW - 15*S, sigY + 60*S);
+    ctx.moveTo(sig1X + 15*S, sigY + 55*S);
+    ctx.lineTo(sig1X + sigW - 15*S, sigY + 55*S);
     ctx.stroke();
 
-    // Right Box: AUTH. SIGNATURE
+    // BOX 2: PRESIDENT SIGNATURE
     ctx.fillStyle = 'rgba(26,45,90,0.03)';
     rr(ctx, sig2X, sigY, sigW, sigH, sigR);
     ctx.fill();
@@ -719,77 +736,96 @@ async function drawCardBack(canvas, data) {
     rr(ctx, sig2X, sigY, sigW, sigH, sigR);
     ctx.stroke();
 
-    // ── President Photo (Circle inside Right Box) ──
-    const presImg = await getPresidentImg();
-    let textCenterX = sig2X + sigW/2;
-    let sigAreaW = sigW;
-    let sigAreaX = sig2X;
-
-    if (presImg) {
-        const pSize = 46 * S;
-        const pX = sig2X + 10 * S;
-        const pY = sigY + (sigH - pSize) / 2;
-        
-        ctx.save();
-        ctx.beginPath();
-        // Draw a circle for the photo
-        ctx.arc(pX + pSize/2, pY + pSize/2, pSize/2, 0, Math.PI * 2);
-        
-        ctx.lineWidth = 1.5 * S;
-        ctx.strokeStyle = '#FF9933';
-        ctx.stroke();
-        
-        ctx.clip(); // Mask photo into the circle
-        ctx.drawImage(presImg, pX, pY, pSize, pSize);
-        ctx.restore();
-
-        // Shift text and signature to the right to make room for photo
-        textCenterX = sig2X + 105 * S;
-        sigAreaW = 90 * S;
-        sigAreaX = sig2X + 60 * S;
-    }
-
     ctx.fillStyle = NAVY;
     ctx.font = `bold ${8.5*S}px 'Segoe UI', Arial, sans-serif`;
     ctx.textAlign = 'center';
-    ctx.fillText('AUTH. SIGNATURE', textCenterX, sigY + 16*S);
+    ctx.fillText('PRESIDENT SIGN', sig2X + sigW/2, sigY + 16*S);
 
     // President Signature Image
     const sigImg = await getPresidentSigImg();
     if (sigImg) {
         ctx.save();
-        rr(ctx, sigAreaX, sigY, sigAreaW, sigH, sigR); // clip to box
+        rr(ctx, sig2X, sigY, sigW, sigH, sigR); // clip to box
         ctx.clip();
         const siw = sigImg.naturalWidth || sigImg.width;
         const sih = sigImg.naturalHeight || sigImg.height;
         
-        const maxW = sigAreaW - 10*S; 
-        const maxH = 40*S;
+        const maxW = sigW - 10*S; 
+        const maxH = 35*S;
         const scale = Math.min(maxW / siw, maxH / sih); 
         const dw = siw * scale;
         const dh = sih * scale;
-        const dx = sigAreaX + (sigAreaW - dw)/2;
-        const dy = sigY + 22*S + (maxH - dh)/2;
+        const dx = sig2X + (sigW - dw)/2;
+        const dy = sigY + 16*S + (maxH - dh)/2;
 
         ctx.drawImage(sigImg, dx, dy, dw, dh);
         ctx.restore();
     } else {
-        // Fallback line
-        ctx.beginPath(); ctx.moveTo(sigAreaX, sigY + 50*S); ctx.lineTo(sigAreaX + sigAreaW, sigY + 50*S); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(sig2X + 15*S, sigY + 55*S); ctx.lineTo(sig2X + sigW - 15*S, sigY + 55*S); ctx.stroke();
     }
 
     ctx.fillStyle = NAVY;
     ctx.font = `bold ${7.5*S}px 'Nirmala UI', 'Arial Unicode MS', sans-serif`;
-    ctx.fillText('प्रकाश चंद्र मांडिल', textCenterX, sigY + 62*S);
+    ctx.fillText('प्रकाश चंद्र मांडिल', sig2X + sigW/2, sigY + 62*S);
 
     ctx.fillStyle = '#555';
     ctx.font = `${6.5*S}px 'Segoe UI', Arial, sans-serif`;
-    ctx.fillText('(National President)', textCenterX, sigY + 72*S);
+    ctx.fillText('(National President)', sig2X + sigW/2, sigY + 72*S);
 
-    // ── Instructions ──
-    const instY = sigY + sigH + 16*S; 
+    // BOX 3: SECRETARY SIGNATURE
+    ctx.fillStyle = 'rgba(26,45,90,0.03)';
+    rr(ctx, sig3X, sigY, sigW, sigH, sigR);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(26,45,90,0.1)';
+    ctx.lineWidth = 1*S;
+    rr(ctx, sig3X, sigY, sigW, sigH, sigR);
+    ctx.stroke();
+
+    ctx.fillStyle = NAVY;
+    ctx.font = `bold ${8.5*S}px 'Segoe UI', Arial, sans-serif`;
     ctx.textAlign = 'center';
+    ctx.fillText('SECRETARY SIGN', sig3X + sigW/2, sigY + 16*S);
+
+    // Secretary Signature Image
+    const secSigImg = await loadImg('assets/sec-signature.png');
+    if (secSigImg) {
+        ctx.save();
+        rr(ctx, sig3X, sigY, sigW, sigH, sigR); // clip to box
+        ctx.clip();
+        const siw = secSigImg.naturalWidth || secSigImg.width;
+        const sih = secSigImg.naturalHeight || secSigImg.height;
+        
+        const maxW = sigW - 10*S; 
+        const maxH = 35*S;
+        const scale = Math.min(maxW / siw, maxH / sih); 
+        const dw = siw * scale;
+        const dh = sih * scale;
+        const dx = sig3X + (sigW - dw)/2;
+        const dy = sigY + 16*S + (maxH - dh)/2;
+
+        ctx.drawImage(secSigImg, dx, dy, dw, dh);
+        ctx.restore();
+    } else {
+        ctx.beginPath(); ctx.moveTo(sig3X + 15*S, sigY + 55*S); ctx.lineTo(sig3X + sigW - 15*S, sigY + 55*S); ctx.stroke();
+    }
+
+    ctx.fillStyle = NAVY;
+    ctx.font = `bold ${7.5*S}px 'Nirmala UI', 'Arial Unicode MS', sans-serif`;
+    ctx.fillText('सुरेश चन्द्र गुप्ता', sig3X + sigW/2, sigY + 62*S);
+
+    ctx.fillStyle = '#555';
+    ctx.font = `${6.5*S}px 'Segoe UI', Arial, sans-serif`;
+    ctx.fillText('(General Secretary)', sig3X + sigW/2, sigY + 72*S);
+
+    // ── Instructions & QR ──
+    const instY = sigY + sigH + 16*S; 
     
+    const qrBackImg = await loadImg('assets/qr.jpeg');
+    if (qrBackImg) {
+        ctx.drawImage(qrBackImg, 18*S, instY - 8*S, 45*S, 45*S);
+    }
+
+    ctx.textAlign = 'center';
     ctx.fillStyle = NAVY;
     ctx.font = `bold ${8.5*S}px 'Segoe UI', Arial, sans-serif`;
     ctx.fillText('Instructions', 250*S, instY);
@@ -805,8 +841,12 @@ async function drawCardBack(canvas, data) {
     ctx.font = `bold ${9*S}px 'Segoe UI', Arial, sans-serif`;
     ctx.textAlign = 'left';
     ctx.fillText('📞 President : 9826654877', 18*S, H - 11*S);
+    
+    ctx.textAlign = 'center';
+    ctx.fillText('📞 Reg. Office : 6261507117', 250*S, H - 11*S);
+    
     ctx.textAlign = 'right';
-    ctx.fillText('📞 Media Prabhari : 9893167002', (500-18)*S, H - 11*S);
+    ctx.fillText('📞 Secretary : 9893167002', (500-18)*S, H - 11*S);
 }
 
 // ── Populate card (calls both canvas draw functions) ─────
@@ -826,13 +866,15 @@ async function getNextMembershipNo() {
     try {
         const counterRef = db.ref('meta/counter');
         const result = await counterRef.transaction(function (current) {
-            return (current || 1000) + 1;
+            return (current || 0) + 1;
         });
-        return result.snapshot.val().toString();
+        const num = result.snapshot.val();
+        return 'JM' + String(num).padStart(4, '0');
     } catch (err) {
         console.warn('Firebase counter error, using random:', err);
         // Fallback: generate a random number
-        return (1000 + Math.floor(Math.random() * 9000)).toString();
+        const num = Math.floor(Math.random() * 9000);
+        return 'JM' + String(num).padStart(4, '0');
     }
 }
 
@@ -896,6 +938,8 @@ function editCard() {
     // Pre-fill the form
     document.getElementById('memberName').value = currentMemberData.name;
     document.getElementById('fatherName').value = currentMemberData.fatherName;
+    document.getElementById('dob').value = currentMemberData.dob || '';
+    document.getElementById('gender').value = currentMemberData.gender || '';
     document.getElementById('aadhaarNo').value = currentMemberData.aadhaar;
     document.getElementById('phoneNo').value = currentMemberData.phone;
     document.getElementById('city').value = currentMemberData.city;
@@ -1046,6 +1090,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 document.getElementById('memberName').value = currentMemberData.name || '';
                 document.getElementById('fatherName').value = currentMemberData.fatherName || '';
+                document.getElementById('dob').value = currentMemberData.dob || '';
+                document.getElementById('gender').value = currentMemberData.gender || '';
                 document.getElementById('aadhaarNo').value = currentMemberData.aadhaar || '';
                 document.getElementById('phoneNo').value = currentMemberData.phone || '';
                 document.getElementById('city').value = currentMemberData.city || '';
