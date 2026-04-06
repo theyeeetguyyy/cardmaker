@@ -21,57 +21,63 @@ const toastEl = document.getElementById('toast');
 
 // --- Aadhaar formatting ---
 const aadhaarInput = document.getElementById('aadhaarNo');
-aadhaarInput.addEventListener('input', function () {
-    let val = this.value.replace(/\D/g, '');
-    if (val.length > 12) val = val.slice(0, 12);
-    // Format: XXXX XXXX XXXX
-    let formatted = '';
-    for (let i = 0; i < val.length; i++) {
-        if (i > 0 && i % 4 === 0) formatted += ' ';
-        formatted += val[i];
-    }
-    this.value = formatted;
-});
+if (aadhaarInput) {
+    aadhaarInput.addEventListener('input', function () {
+        let val = this.value.replace(/\D/g, '');
+        if (val.length > 12) val = val.slice(0, 12);
+        // Format: XXXX XXXX XXXX
+        let formatted = '';
+        for (let i = 0; i < val.length; i++) {
+            if (i > 0 && i % 4 === 0) formatted += ' ';
+            formatted += val[i];
+        }
+        this.value = formatted;
+    });
+}
 
 // --- Phone formatting ---
 const phoneInput = document.getElementById('phoneNo');
-phoneInput.addEventListener('input', function () {
-    let val = this.value.replace(/[^\d+]/g, '');
-    if (!val.startsWith('+91') && !val.startsWith('+')) {
-        if (val.startsWith('91') && val.length > 10) {
-            val = '+' + val;
-        } else if (val.length <= 10) {
-            val = '+91 ' + val;
+if (phoneInput) {
+    phoneInput.addEventListener('input', function () {
+        let val = this.value.replace(/[^\d+]/g, '');
+        if (!val.startsWith('+91') && !val.startsWith('+')) {
+            if (val.startsWith('91') && val.length > 10) {
+                val = '+' + val;
+            } else if (val.length <= 10) {
+                val = '+91 ' + val;
+            }
         }
-    }
-    this.value = val;
-});
+        this.value = val;
+    });
+}
 
 // --- Photo Upload ---
-photoInput.addEventListener('change', function (e) {
-    const file = e.target.files[0];
-    if (!file) return;
+if (photoInput) {
+    photoInput.addEventListener('change', function (e) {
+        const file = e.target.files[0];
+        if (!file) return;
 
-    // Validate file size (2MB max)
-    if (file.size > 2 * 1024 * 1024) {
-        showToast('फोटो 2MB से कम होनी चाहिए! Photo must be under 2MB.', 'error');
-        return;
-    }
+        // Validate file size (2MB max)
+        if (file.size > 2 * 1024 * 1024) {
+            showToast('फोटो 2MB से कम होनी चाहिए! Photo must be under 2MB.', 'error');
+            return;
+        }
 
-    // Validate it's an image
-    if (!file.type.startsWith('image/')) {
-        showToast('कृपया एक इमेज फ़ाइल चुनें! Please select an image file.', 'error');
-        return;
-    }
+        // Validate it's an image
+        if (!file.type.startsWith('image/')) {
+            showToast('कृपया एक इमेज फ़ाइल चुनें! Please select an image file.', 'error');
+            return;
+        }
 
-    const reader = new FileReader();
-    reader.onload = function (ev) {
-        uploadedPhotoDataURL = ev.target.result;
-        photoPreview.innerHTML = `<img src="${uploadedPhotoDataURL}" alt="Your Photo">`;
-        photoUploadArea.style.borderColor = 'var(--green)';
-    };
-    reader.readAsDataURL(file);
-});
+        const reader = new FileReader();
+        reader.onload = function (ev) {
+            uploadedPhotoDataURL = ev.target.result;
+            photoPreview.innerHTML = `<img src="${uploadedPhotoDataURL}" alt="Your Photo">`;
+            photoUploadArea.style.borderColor = 'var(--green)';
+        };
+        reader.readAsDataURL(file);
+    });
+}
 
 // --- Duplicate Check: Aadhaar & Phone ---
 async function checkDuplicate(aadhaarNo, phoneNo) {
@@ -129,9 +135,12 @@ function closeFindModal() {
 }
 
 // Close find modal on overlay click
-document.getElementById('findModal').addEventListener('click', function (e) {
-    if (e.target === this) closeFindModal();
-});
+const findModal = document.getElementById('findModal');
+if (findModal) {
+    findModal.addEventListener('click', function (e) {
+        if (e.target === this) closeFindModal();
+    });
+}
 
 async function submitFindCard(e) {
     e.preventDefault();
@@ -223,8 +232,9 @@ async function submitFindCard(e) {
 }
 
 // --- Form Submission ---
-cardForm.addEventListener('submit', async function (e) {
-    e.preventDefault();
+if (cardForm) {
+    cardForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
 
     // Validate photo
     if (!uploadedPhotoDataURL) {
@@ -329,6 +339,7 @@ cardForm.addEventListener('submit', async function (e) {
         }
     }
 });
+}
 
 // --- Mask Aadhaar ---
 function maskAadhaar(aadhaar) {

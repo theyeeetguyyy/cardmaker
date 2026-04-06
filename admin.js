@@ -252,27 +252,8 @@ function exportCSV() {
 // --- Card Download Logic for Admin ---
 
 function populateRenderCard(data) {
-    document.getElementById('cardName').textContent = (data.name || '').toUpperCase();
-    document.getElementById('cardFather').textContent = `S/o. Shri ${data.fatherName || ''}`;
-    document.getElementById('cardPhone').textContent = data.phone || '';
-    document.getElementById('cardAadhaar').textContent = `Aadhaar: ${data.aadhaar || ''}`;
-    document.getElementById('cardCity').textContent = (data.city || '').toUpperCase();
-    document.getElementById('cardState').textContent = (data.state || '').toUpperCase();
-    document.getElementById('cardMemberNo').textContent = data.membershipNo || '';
-    document.getElementById('cardDate').textContent = data.issuingDate || '';
-    document.getElementById('cardPhoto').src = data.photo || '';
-
-    // Generate QR code
-    const qrContainer = document.getElementById('cardQR');
-    qrContainer.innerHTML = '';
-    new QRCode(qrContainer, {
-        text: `ABMGVM Member: ${data.name} | No: ${data.membershipNo} | Ph: ${data.phone}`,
-        width: 50,
-        height: 50,
-        colorDark: '#1a2d5a',
-        colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.M
-    });
+    // Kept empty in case HTML-reference is still needed briefly, 
+    // but canvas draws directly from the 'data' object now.
 }
 
 async function downloadMemberCardPNG(memberId) {
@@ -280,28 +261,31 @@ async function downloadMemberCardPNG(memberId) {
     if (!member) return;
     
     showToast('🖼️ PNG बन रहा है... Generating PNG...', 'success');
-    populateRenderCard(member);
 
     try {
-        const frontCanvas = await html2canvas(document.getElementById('cardFront'), {
-            scale: 3, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false
-        });
-        const backCanvas = await html2canvas(document.getElementById('cardBack'), {
-            scale: 3, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false
-        });
+        const frontCanvas = document.createElement('canvas');
+        frontCanvas.width = 1500;
+        frontCanvas.height = 930;
+        await drawCardFront(frontCanvas, member);
 
-        const gap = 40;
+        const backCanvas = document.createElement('canvas');
+        backCanvas.width = 1500;
+        backCanvas.height = 930;
+        await drawCardBack(backCanvas, member);
+
+        const gap = 60;
         const combinedCanvas = document.createElement('canvas');
-        combinedCanvas.width = frontCanvas.width;
-        combinedCanvas.height = frontCanvas.height + gap + backCanvas.height;
+        combinedCanvas.width = 1500;
+        combinedCanvas.height = 930 * 2 + gap;
         const ctx = combinedCanvas.getContext('2d');
-        ctx.fillStyle = '#f0f0f0';
+        ctx.fillStyle = '#1a2d5a';
         ctx.fillRect(0, 0, combinedCanvas.width, combinedCanvas.height);
         ctx.drawImage(frontCanvas, 0, 0);
-        ctx.drawImage(backCanvas, 0, frontCanvas.height + gap);
+        ctx.drawImage(backCanvas, 0, 930 + gap);
 
+        const safeName = (member.name || 'Member').replace(/\s+/g, '_');
         const link = document.createElement('a');
-        link.download = `ABMGVM_Card_${(member.name || 'Member').replace(/\s+/g, '_')}.png`;
+        link.download = `ABMGVM_Card_${safeName}.png`;
         link.href = combinedCanvas.toDataURL('image/png');
         link.click();
         showToast('✅ PNG डाउनलोड हो गया!', 'success');
@@ -316,30 +300,40 @@ async function downloadMemberCardPDF(memberId) {
     if (!member) return;
 
     showToast('📄 PDF बन रहा है...', 'success');
-    populateRenderCard(member);
 
     try {
-        const { jsPDF } = window.jspdf;
-        const frontCanvas = await html2canvas(document.getElementById('cardFront'), {
-            scale: 3, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false
-        });
-        const backCanvas = await html2canvas(document.getElementById('cardBack'), {
-            scale: 3, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false
-        });
+        const frontCanvas = document.createElement('canvas');
+        frontCanvas.width = 1500;
+        frontCanvas.height = 930;
+        await drawCardFront(frontCanvas, member);
 
+        const backCanvas = document.createElement('canvas');
+        backCanvas.width = 1500;
+        backCanvas.height = 930;
+        await drawCardBack(backCanvas, member);
+
+        const { jsPDF } = window.jspdf;
         const cardW = 85.6, cardH = 53.98;
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pageW = pdf.internal.pageSize.getWidth();
-        const xOffset = (pageW - cardW) / 2;
+        const pageH = pdf.internal.pageSize.getHeight();
+        const xOff = (pageW - cardW) / 2;
 
-        pdf.setFontSize(12);
+        pdf.setFillColor(245, 245, 245);
+        pdf.rect(0, 0, pageW, pageH, 'F');
+
+        pdf.setFontSize(11);
         pdf.setTextColor(26, 45, 90);
-        pdf.text('Akhil Bhartiya Mahour Gware Vaishya Mahasabha', pageW / 2, 15, { align: 'center' });
+        pdf.text('Akhil Bhartiya Mahour Gware Vaishya Mahasabha', pageW / 2, 14, { align: 'center' });
+        pdf.setFontSize(8); 
+        pdf.setTextColor(80, 80, 80);
+        pdf.text('Membership Card', pageW / 2, 20, { align: 'center' });
         
-        pdf.addImage(frontCanvas.toDataURL('image/png'), 'PNG', xOffset, 30, cardW, cardH);
-        pdf.addImage(backCanvas.toDataURL('image/png'), 'PNG', xOffset, 30 + cardH + 15, cardW, cardH);
+        pdf.addImage(frontCanvas.toDataURL('image/png'), 'PNG', xOff, 26, cardW, cardH);
+        pdf.addImage(backCanvas.toDataURL('image/png'), 'PNG', xOff, 26 + cardH + 12, cardW, cardH);
 
-        pdf.save(`ABMGVM_Card_${(member.name || 'Member').replace(/\s+/g, '_')}.pdf`);
+        const safeName = (member.name || 'Member').replace(/\s+/g, '_');
+        pdf.save(`ABMGVM_Card_${safeName}.pdf`);
         showToast('✅ PDF डाउनलोड हो गया!', 'success');
     } catch (err) {
         console.error(err);
