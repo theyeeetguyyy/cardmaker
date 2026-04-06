@@ -5,7 +5,7 @@
 // ============================================
 
 let allMembers = [];
-const toastEl = document.getElementById('toast');
+// toastEl is already globally declared by app.js
 
 // --- Enter key for login ---
 document.getElementById('adminPassword').addEventListener('keydown', function (e) {
