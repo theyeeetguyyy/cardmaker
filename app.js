@@ -184,7 +184,7 @@ async function submitFindCard(e) {
         }
 
         // Successfully found! Load the data to current mode
-        currentMemberData = foundMember;
+        currupdaentMemberData = foundMember;
         currentFirebaseKey = foundKey;
         isEditMode = true; // Technically they can edit it now, but we'll adapt to just showing it
         
@@ -351,6 +351,32 @@ function getLogoImg() {
         img.onerror = () => resolve(null);
         img.crossOrigin = 'anonymous';
         img.src = 'assets/logo-main.png';
+    });
+}
+
+// Cached president photo
+let _presidentImg = null;
+function getPresidentImg() {
+    if (_presidentImg) return Promise.resolve(_presidentImg);
+    return new Promise(resolve => {
+        const img = new Image();
+        img.onload  = () => { _presidentImg = img; resolve(img); };
+        img.onerror = () => resolve(null);
+        img.crossOrigin = 'anonymous';
+        img.src = 'assets/president.jpeg';
+    });
+}
+
+// Cached president signature
+let _presidentSigImg = null;
+function getPresidentSigImg() {
+    if (_presidentSigImg) return Promise.resolve(_presidentSigImg);
+    return new Promise(resolve => {
+        const img = new Image();
+        img.onload  = () => { _presidentSigImg = img; resolve(img); };
+        img.onerror = () => resolve(null);
+        img.crossOrigin = 'anonymous';
+        img.src = 'assets/president-signature.jpeg';
     });
 }
 
@@ -568,100 +594,257 @@ async function drawCardBack(canvas, data) {
     await document.fonts.ready;
     ctx.clearRect(0, 0, W, H);
 
-    const NAVY   = '#1a2d5a';
-    const TEAL   = '#2eb8d0';
-    const GOLD   = '#c8993a';
-    const WHITE  = '#ffffff';
-    const HDR_H  = 64*S;
-    const FTR_H  = 36*S;
-    const RADIUS = 14*S;
+    const NAVY    = '#1a2d5a';
+    const TEAL    = '#2eb8d0';
+    const GOLD    = '#c8993a';
+    const WHITE   = '#ffffff';
+    const MAROON  = '#7a2200';
+    const HDR_H   = 64*S;
+    const FTR_H   = 36*S;
+    const RADIUS  = 14*S;
 
-    // Card background
+    // ── Card background ──
     rr(ctx, 0, 0, W, H, RADIUS);
     ctx.fillStyle = WHITE;
     ctx.fill();
 
-    // Header
+    // ── Header (navy, top-rounded) ──
     rrTop(ctx, 0, 0, W, HDR_H, RADIUS);
     ctx.fillStyle = NAVY;
     ctx.fill();
 
-    // Gold accent line
+    // Gold accent line below header
     ctx.fillStyle = GOLD;
     ctx.fillRect(0, HDR_H, W, 3*S);
 
-    // Footer
+    // ── Footer (teal, bottom-rounded) ──
     rrBottom(ctx, 0, H - FTR_H, W, FTR_H, RADIUS);
     ctx.fillStyle = TEAL;
     ctx.fill();
 
     // ── Header text (centered) ──
-    ctx.textAlign = 'center';
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.font = `${8*S}px 'Segoe UI', Arial, sans-serif`;
-    ctx.fillText('Reg. No. : S/3369/SDM/NW/2018', W/2, 15*S);
-
-    ctx.fillStyle = WHITE;
-    ctx.font = `bold ${17*S}px 'Nirmala UI', 'Arial Unicode MS', sans-serif`;
-    ctx.fillText('अखिल भारतीय माहौर ग्वारे वैश्य महासभा', W/2, 36*S);
-
-    ctx.fillStyle = 'rgba(255,255,255,0.75)';
-    ctx.font = `${9*S}px 'Segoe UI', Arial, sans-serif`;
-    ctx.fillText('Akhil Bhartiya Mahour Gware Vaishya Mahasabha', W/2, 52*S);
-
-    // ── Watermark ──
     const logo = await getLogoImg();
+    // Left logo in header
     if (logo) {
         ctx.save();
-        ctx.globalAlpha = 0.06;
-        ctx.drawImage(logo, 155*S, 75*S, 190*S, 190*S);
+        ctx.beginPath();
+        ctx.arc(36*S, 32*S, 22*S, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(logo, 14*S, 10*S, 44*S, 44*S);
+        ctx.restore();
+        ctx.beginPath();
+        ctx.arc(36*S, 32*S, 22*S, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+        ctx.lineWidth = 1.5*S;
+        ctx.stroke();
+    }
+    // Right logo in header
+    if (logo) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc((500-36)*S, 32*S, 22*S, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(logo, (500-58)*S, 10*S, 44*S, 44*S);
+        ctx.restore();
+        ctx.beginPath();
+        ctx.arc((500-36)*S, 32*S, 22*S, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+        ctx.lineWidth = 1.5*S;
+        ctx.stroke();
+    }
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.font = `${7.5*S}px 'Segoe UI', Arial, sans-serif`;
+    ctx.fillText('Reg. No. : S/3369/SDM/NW/2018', W/2, 14*S);
+
+    ctx.fillStyle = WHITE;
+    ctx.font = `bold ${16*S}px 'Nirmala UI', 'Arial Unicode MS', sans-serif`;
+    ctx.fillText('अखिल भारतीय माहौर ग्वारे वैश्य महासभा', W/2, 35*S);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = `${8.5*S}px 'Segoe UI', Arial, sans-serif`;
+    ctx.fillText('Akhil Bhartiya Mahour Gware Vaishya Mahasabha', W/2, 50*S);
+
+    // ── Watermark (faint logo center) ──
+    if (logo) {
+        ctx.save();
+        ctx.globalAlpha = 0.04;
+        ctx.drawImage(logo, 175*S, 90*S, 150*S, 150*S);
         ctx.restore();
     }
 
-    // ── Signature boxes ──
-    const sigY = 88*S, sigW = 170*S, sigH = 85*S, sigR = 8*S;
-    const sig1X = 28*S, sig2X = (500-28-170)*S;
+    // ═══════════════════════════════════════════════
+    // BODY: President photo + signature on LEFT
+    //        Address on RIGHT
+    // ═══════════════════════════════════════════════
 
-    function drawSigBox(x, y, title, designation) {
-        // Light box background
-        ctx.fillStyle = 'rgba(26,45,90,0.04)';
-        rr(ctx, x, y, sigW, sigH, sigR);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(26,45,90,0.15)';
-        ctx.lineWidth = 1*S;
-        rr(ctx, x, y, sigW, sigH, sigR);
-        ctx.stroke();
+    const bodyTop = HDR_H + 6*S;
 
-        // "Auth. Signature" label
-        ctx.fillStyle = NAVY;
-        ctx.font = `bold ${9*S}px 'Segoe UI', Arial, sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.fillText(title, x + sigW/2, y + 18*S);
+    // ── President Photo (circular, left side) ──
+    const presidentImg = await getPresidentImg();
+    const presCX = 70*S;                 // center X
+    const presCY = bodyTop + 42*S;       // center Y
+    const presR  = 34*S;                 // radius
 
-        // Signature line
-        ctx.strokeStyle = '#555';
-        ctx.lineWidth = 1*S;
+    if (presidentImg) {
+        // Circular clip for president photo
+        ctx.save();
         ctx.beginPath();
-        ctx.moveTo(x + 20*S, y + 52*S);
-        ctx.lineTo(x + sigW - 20*S, y + 52*S);
-        ctx.stroke();
+        ctx.arc(presCX, presCY, presR, 0, Math.PI * 2);
+        ctx.clip();
+        const piw = presidentImg.naturalWidth  || presidentImg.width;
+        const pih = presidentImg.naturalHeight || presidentImg.height;
+        const pScale = Math.max((presR*2) / piw, (presR*2) / pih);
+        const pdw = piw * pScale, pdh = pih * pScale;
+        const pdx = presCX - pdw/2, pdy = presCY - pdh/2;
+        ctx.drawImage(presidentImg, pdx, pdy, pdw, pdh);
+        ctx.restore();
 
-        // Designation
-        ctx.fillStyle = '#555';
-        ctx.font = `${8.5*S}px 'Segoe UI', Arial, sans-serif`;
-        ctx.fillText(designation, x + sigW/2, y + 66*S);
+        // Gold ring around photo
+        ctx.beginPath();
+        ctx.arc(presCX, presCY, presR, 0, Math.PI * 2);
+        ctx.strokeStyle = GOLD;
+        ctx.lineWidth = 2.5*S;
+        ctx.stroke();
     }
 
-    drawSigBox(sig1X, sigY, 'Auth. Signature', 'National Secretary');
-    drawSigBox(sig2X, sigY, 'Auth. Signature', 'National President');
+    // ── Signature image below president photo ──
+    const sigImg = await getPresidentSigImg();
+    const sigImgY = presCY + presR + 6*S;
+    const sigImgW = 90*S;
+    const sigImgH = 32*S;
+    const sigImgX = presCX - sigImgW/2;
+
+    if (sigImg) {
+        ctx.save();
+        rr(ctx, sigImgX, sigImgY, sigImgW, sigImgH, 4*S);
+        ctx.clip();
+        // Draw signature centered within the box
+        const siw = sigImg.naturalWidth  || sigImg.width;
+        const sih = sigImg.naturalHeight || sigImg.height;
+        const sScale = Math.min(sigImgW / siw, sigImgH / sih) * 0.9;
+        const sdw = siw * sScale, sdh = sih * sScale;
+        const sdx = sigImgX + (sigImgW - sdw) / 2;
+        const sdy = sigImgY + (sigImgH - sdh) / 2;
+        ctx.drawImage(sigImg, sdx, sdy, sdw, sdh);
+        ctx.restore();
+    }
+
+    // Name + designation text below signature
+    ctx.textAlign = 'center';
+    ctx.fillStyle = NAVY;
+    ctx.font = `bold ${8.5*S}px 'Nirmala UI', 'Arial Unicode MS', sans-serif`;
+    ctx.fillText('प्रकाश चंद्र मांडिल', presCX, sigImgY + sigImgH + 12*S);
+
+    ctx.fillStyle = MAROON;
+    ctx.font = `bold ${7.5*S}px 'Segoe UI', Arial, sans-serif`;
+    ctx.fillText('राष्ट्रीय अध्यक्ष', presCX, sigImgY + sigImgH + 24*S);
+
+    ctx.fillStyle = '#555';
+    ctx.font = `${7*S}px 'Segoe UI', Arial, sans-serif`;
+    ctx.fillText('National President', presCX, sigImgY + sigImgH + 34*S);
+
+    // ── Decorative vertical gold divider ──
+    const divX = 150*S;
+    ctx.strokeStyle = GOLD;
+    ctx.lineWidth = 1.5*S;
+    ctx.beginPath();
+    ctx.moveTo(divX, bodyTop + 8*S);
+    ctx.lineTo(divX, H - FTR_H - 8*S);
+    ctx.stroke();
+    // Small diamond ornaments at top and bottom of divider
+    function drawDiamond(cx, cy, size) {
+        ctx.fillStyle = GOLD;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - size);
+        ctx.lineTo(cx + size, cy);
+        ctx.lineTo(cx, cy + size);
+        ctx.lineTo(cx - size, cy);
+        ctx.closePath();
+        ctx.fill();
+    }
+    drawDiamond(divX, bodyTop + 8*S, 3*S);
+    drawDiamond(divX, H - FTR_H - 8*S, 3*S);
+
+    // ── Address Section (right side) ──
+    const addrX = 165*S;
+    const addrMaxW = W - addrX - 16*S;
+    let addrY = bodyTop + 14*S;
+
+    // "कार्यालय का पता" heading
+    ctx.textAlign = 'left';
+    ctx.fillStyle = MAROON;
+    ctx.font = `bold ${10*S}px 'Nirmala UI', 'Arial Unicode MS', sans-serif`;
+    ctx.fillText('कार्यालय का पता :', addrX, addrY);
+    addrY += 15*S;
+
+    // Address line with 📍 icon
+    ctx.fillStyle = NAVY;
+    ctx.font = `${9*S}px 'Nirmala UI', 'Arial Unicode MS', sans-serif`;
+
+    // Multi-line address
+    const addressLines = [
+        '65 पंचवटी वरूण नगर,',
+        'रोशनी घर के पीछे, लश्कर,',
+        'ग्वालियर (म.प.)'
+    ];
+    addressLines.forEach(line => {
+        ctx.fillText(line, addrX + 4*S, addrY);
+        addrY += 14*S;
+    });
+
+    addrY += 4*S;
+
+    // Office address in English
+    ctx.fillStyle = '#666';
+    ctx.font = `${7.5*S}px 'Segoe UI', Arial, sans-serif`;
+    const engAddressLines = [
+        '65 Panchvati, Varun Nagar,',
+        'Behind Roshni Ghar, Lashkar,',
+        'Gwalior (M.P.)'
+    ];
+    engAddressLines.forEach(line => {
+        ctx.fillText(line, addrX + 4*S, addrY);
+        addrY += 12*S;
+    });
+
+    addrY += 6*S;
+
+    // ── Thin accent line separator ──
+    ctx.strokeStyle = 'rgba(26,45,90,0.12)';
+    ctx.lineWidth = 1*S;
+    ctx.beginPath();
+    ctx.moveTo(addrX, addrY);
+    ctx.lineTo(W - 20*S, addrY);
+    ctx.stroke();
+    addrY += 10*S;
+
+    // ── Instructions (compact) ──
+    ctx.fillStyle = NAVY;
+    ctx.font = `bold ${8*S}px 'Segoe UI', Arial, sans-serif`;
+    ctx.fillText('Instruction :', addrX + 4*S, addrY);
+    addrY += 12*S;
+
+    ctx.fillStyle = '#555';
+    ctx.font = `${6.5*S}px 'Segoe UI', Arial, sans-serif`;
+    const instrLines = [
+        'This card is property of A.B.M.G.V.M.',
+        'and is nontransferable. If found, please',
+        'contact at the above address.'
+    ];
+    instrLines.forEach(line => {
+        ctx.fillText(line, addrX + 4*S, addrY);
+        addrY += 10*S;
+    });
 
     // ── Footer contacts ──
-    ctx.fillStyle = NAVY;
-    ctx.font = `${9.5*S}px 'Segoe UI', Arial, sans-serif`;
+    ctx.fillStyle = WHITE;
+    ctx.font = `bold ${9*S}px 'Segoe UI', Arial, sans-serif`;
     ctx.textAlign = 'left';
-    ctx.fillText('📞 President: 9876543210', 20*S, H - 10*S);
+    ctx.fillText('📞 President : 9826654877', 18*S, H - 11*S);
     ctx.textAlign = 'right';
-    ctx.fillText('📞 Media Prabhari: 9876543210', (500-20)*S, H - 10*S);
+    ctx.fillText('📞 Media Prabhari : 9893167002', (500-18)*S, H - 11*S);
 }
 
 // ── Populate card (calls both canvas draw functions) ─────
