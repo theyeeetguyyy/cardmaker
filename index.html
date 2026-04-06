@@ -31,7 +31,7 @@
             <h1>अखिल भारतीय माहौर ग्वारे वैश्य महासभा</h1>
             <h2>Akhil Bhartiya Mahour Gware Vaishya Mahasabha</h2>
             <p class="reg-no">Reg. No.: S/3369/SDM/NW/2018 (पंजीकृत)</p>
-            <p class="subtitle">सदस्यता कार्ड बनाएं — Generate Your Membership Card</p>
+            <p class="subtitle" style="font-size: 1.5rem; font-weight: bold; color: var(--saffron);">मतदान कार्ड — Matdaan Card</p>
             <div class="matdan-badge">मतदान क्रमांक कार्ड</div>
         </section>
 
@@ -70,7 +70,7 @@
                     </div>
                     <div class="form-group">
                         <label for="phoneNo">फोन नंबर / Phone Number *</label>
-                        <input type="tel" id="phoneNo" placeholder="+91 XXXXXXXXXX" maxlength="15" required>
+                        <input type="tel" id="phoneNo" placeholder="XXXXXXXXXX" maxlength="10" required>
                     </div>
                     <div class="form-group">
                         <label for="city">शहर / City *</label>
@@ -155,6 +155,38 @@
             </div>
         </section>
 
+        <!-- Footer People -->
+        <section class="glass-panel" style="margin-top: 30px; text-align: center;">
+            <h3 style="color: var(--saffron); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; margin-bottom: 24px;">National Leadership</h3>
+            <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
+                <div style="width: 120px; text-align: center;">
+                    <img src="assets/person1.jpeg" alt="Prakash Chand Mandil" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; border: 3px solid var(--saffron); margin-bottom: 8px;">
+                    <div style="font-size: 0.9rem; font-weight: bold; color: var(--white);">Prakash Chand Mandil</div>
+                    <div style="font-size: 0.75rem; color: var(--gray-400);">National President</div>
+                </div>
+                <div style="width: 120px; text-align: center;">
+                    <img src="assets/person2.jpeg" alt="Praveen Mandil" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; border: 3px solid var(--saffron); margin-bottom: 8px;">
+                    <div style="font-size: 0.9rem; font-weight: bold; color: var(--white);">Praveen Mandil</div>
+                    <div style="font-size: 0.75rem; color: var(--gray-400);">National Vice President</div>
+                </div>
+                <div style="width: 120px; text-align: center;">
+                    <img src="assets/person3.jpeg" alt="Suresh Chand Gupta" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; border: 3px solid var(--saffron); margin-bottom: 8px;">
+                    <div style="font-size: 0.9rem; font-weight: bold; color: var(--white);">Suresh Chand Gupta</div>
+                    <div style="font-size: 0.75rem; color: var(--gray-400);">National Secretary</div>
+                </div>
+                <div style="width: 120px; text-align: center;">
+                    <img src="assets/person4.jpeg" alt="Rajesh Goyal" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; border: 3px solid var(--saffron); margin-bottom: 8px;">
+                    <div style="font-size: 0.9rem; font-weight: bold; color: var(--white);">Rajesh Goyal</div>
+                    <div style="font-size: 0.75rem; color: var(--gray-400);">National Treasurer</div>
+                </div>
+                <div style="width: 120px; text-align: center;">
+                    <img src="assets/person5.jpeg" alt="Madan Mohan Goyal" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; border: 3px solid var(--saffron); margin-bottom: 8px;">
+                    <div style="font-size: 0.9rem; font-weight: bold; color: var(--white);">Madan Mohan Goyal</div>
+                    <div style="font-size: 0.75rem; color: var(--gray-400);">National Assistant Secretary</div>
+                </div>
+            </div>
+        </section>
+
         <!-- Admin link -->
         <div class="admin-link">
             <a href="admin.html">🔐 Admin Panel</a>
@@ -172,7 +204,7 @@
             <form id="findForm" autocomplete="off" onsubmit="submitFindCard(event)">
                 <div class="form-group" style="text-align: left; margin-bottom: 16px;">
                     <label for="findPhone">फोन नंबर / Phone Number *</label>
-                    <input type="tel" id="findPhone" placeholder="+91 XXXXXXXXXX" required>
+                    <input type="tel" id="findPhone" placeholder="XXXXXXXXXX" maxlength="10" required>
                 </div>
                 <div class="form-group" style="text-align: left; margin-bottom: 24px;">
                     <label for="findAadhaar">आधार नंबर / Aadhaar *</label>

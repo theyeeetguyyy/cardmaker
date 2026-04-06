@@ -739,7 +739,7 @@ async function drawCardBack(canvas, data) {
     ctx.fillStyle = NAVY;
     ctx.font = `bold ${8.5*S}px 'Segoe UI', Arial, sans-serif`;
     ctx.textAlign = 'center';
-    ctx.fillText('PRESIDENT SIGN', sig2X + sigW/2, sigY + 16*S);
+    ctx.fillText('Auth. Signature', sig2X + sigW/2, sigY + 16*S);
 
     // President Signature Image
     const sigImg = await getPresidentSigImg();
@@ -784,7 +784,7 @@ async function drawCardBack(canvas, data) {
     ctx.fillStyle = NAVY;
     ctx.font = `bold ${8.5*S}px 'Segoe UI', Arial, sans-serif`;
     ctx.textAlign = 'center';
-    ctx.fillText('SECRETARY SIGN', sig3X + sigW/2, sigY + 16*S);
+    ctx.fillText('Auth. Signature', sig3X + sigW/2, sigY + 16*S);
 
     // Secretary Signature Image
     const secSigImg = await loadImg('assets/sectry- signature.png');
@@ -815,7 +815,7 @@ async function drawCardBack(canvas, data) {
 
     ctx.fillStyle = '#555';
     ctx.font = `${6.5*S}px 'Segoe UI', Arial, sans-serif`;
-    ctx.fillText('(General Secretary)', sig3X + sigW/2, sigY + 72*S);
+    ctx.fillText('(National Secretary)', sig3X + sigW/2, sigY + 72*S);
 
     // ── Instructions & QR ──
     const instY = sigY + sigH + 16*S; 
