@@ -745,16 +745,17 @@ async function drawCardBack(canvas, data) {
 
     // ── Instructions ──
     const instY = sigY + sigH + 16*S; 
-    ctx.textAlign = 'left';
+    ctx.textAlign = 'center';
+    
     ctx.fillStyle = NAVY;
     ctx.font = `bold ${8.5*S}px 'Segoe UI', Arial, sans-serif`;
-    ctx.fillText('Instruction :', 20*S, instY);
+    ctx.fillText('Instructions', 250*S, instY);
 
     ctx.fillStyle = '#555';
     ctx.font = `${6.5*S}px 'Segoe UI', Arial, sans-serif`;
-    ctx.fillText('This card is property of Akhil Bhartiya Mahour Gware Vaishya Mahasabha and is nontransferable.', 20*S, instY + 12*S);
-    ctx.fillText('The use of this card is governed by the terms and conditions of A.B.M.G.V.M registered legislation.', 20*S, instY + 22*S);
-    ctx.fillText('If found, please return to the office address mentioned above.', 20*S, instY + 32*S);
+    ctx.fillText('This card is property of Akhil Bhartiya Mahour Gware Vaishya Mahasabha and is nontransferable.', 250*S, instY + 12*S);
+    ctx.fillText('The use of this card is governed by the terms and conditions of A.B.M.G.V.M registered legislation.', 250*S, instY + 22*S);
+    ctx.fillText('If found, please return to the office address mentioned above.', 250*S, instY + 32*S);
 
     // ── Footer contacts ──
     ctx.fillStyle = WHITE;
