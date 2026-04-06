@@ -986,3 +986,50 @@ function showToast(message, type = 'success') {
         toastEl.classList.remove('visible');
     }, 4000);
 }
+
+// --- Check for Edit Mode via URL (from Admin Panel) ---
+document.addEventListener('DOMContentLoaded', async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const editId = urlParams.get('edit');
+    if (editId && document.getElementById('cardForm')) {
+        try {
+            showToast('Loading member data...', 'success');
+            const snap = await db.ref('members/' + editId).once('value');
+            if (snap.exists()) {
+                currentMemberData = snap.val();
+                currentFirebaseKey = editId;
+                isEditMode = true;
+                
+                document.getElementById('memberName').value = currentMemberData.name || '';
+                document.getElementById('fatherName').value = currentMemberData.fatherName || '';
+                document.getElementById('aadhaarNo').value = currentMemberData.aadhaar || '';
+                document.getElementById('phoneNo').value = currentMemberData.phone || '';
+                document.getElementById('city').value = currentMemberData.city || '';
+                document.getElementById('state').value = currentMemberData.state || '';
+                
+                uploadedPhotoDataURL = currentMemberData.photo;
+                const photoPreview = document.getElementById('photoPreview');
+                const photoUploadArea = document.getElementById('photoUploadArea');
+                if (photoPreview && photoUploadArea && uploadedPhotoDataURL) {
+                   photoPreview.innerHTML = `<img src="${uploadedPhotoDataURL}" alt="Your Photo">`;
+                   photoUploadArea.style.borderColor = 'var(--green)';
+                }
+                
+                const btnGenerate = document.getElementById('btnGenerate');
+                if (btnGenerate) {
+                    btnGenerate.innerHTML = '✏️ कार्ड अपडेट करें — Update Card';
+                }
+                
+                showToast('✏️ You are in Edit Mode. Update details below.', 'success');
+                
+                // Clear the URL to avoid accidentally re-triggering on manual refresh
+                window.history.replaceState({}, document.title, window.location.pathname);
+            } else {
+                showToast('❌ Member not found!', 'error');
+            }
+        } catch (e) { 
+            console.error(e); 
+            showToast('Error loading member data', 'error');
+        }
+    }
+});

@@ -134,11 +134,39 @@ function renderTable(members) {
             <td>${escapeHtml(m.state || '—')}</td>
             <td style="color: var(--saffron); font-weight: 700;">${escapeHtml(m.membershipNo || '—')}</td>
             <td>${escapeHtml(m.issuingDate || '—')}</td>
-            <td>
-                <button class="btn-view" onclick="viewMember('${m.id}')">👁️ View</button>
+            <td style="display: flex; gap: 8px;">
+                <button class="btn-view" onclick="viewMember('${m.id}')" title="View">👁️</button>
+                <button class="btn-view" style="background: rgba(255, 153, 51, 0.2); color: var(--saffron); border-color: rgba(255,153,51,0.4);" onclick="editMember('${m.id}')" title="Edit">✏️</button>
+                <button class="btn-view" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border-color: rgba(239,68,68,0.4);" onclick="deleteMember('${m.id}')" title="Delete">🗑️</button>
             </td>
         </tr>
     `).join('');
+}
+
+// --- Edit Member ---
+function editMember(id) {
+    window.location.href = `index.html?edit=${id}`;
+}
+
+// --- Delete Member ---
+async function deleteMember(id) {
+    if (!confirm('Are you sure you want to permanently delete this member?')) {
+        return;
+    }
+    
+    try {
+        await db.ref('members/' + id).remove();
+        showToast('🗑️ Member deleted successfully', 'success');
+        
+        // Remove from local array to avoid refetching everything
+        allMembers = allMembers.filter(m => m.id !== id);
+        updateStats();
+        filterMembers(); // re-renders current view
+        
+    } catch (err) {
+        console.error('Delete error:', err);
+        showToast('Error deleting member', 'error');
+    }
 }
 
 // --- Filter Members ---
