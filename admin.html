@@ -86,6 +86,8 @@
                                 <th>Photo</th>
                                 <th>Name</th>
                                 <th>Father's Name</th>
+                                <th>DOB</th>
+                                <th>Gender</th>
                                 <th>Phone</th>
                                 <th>Aadhaar</th>
                                 <th>City</th>
@@ -97,7 +99,7 @@
                         </thead>
                         <tbody id="membersTableBody">
                             <tr>
-                                <td colspan="11" style="text-align: center; padding: 40px; color: var(--gray-500);">
+                                <td colspan="13" style="text-align: center; padding: 40px; color: var(--gray-500);">
                                     <span class="spinner"></span> Loading members...
                                 </td>
                             </tr>
@@ -123,83 +125,8 @@
         </div>
     </div>
 
-    <!-- Hidden card template for rendering/downloading -->
-    <div class="card-render-area" id="renderArea">
-        <div class="id-card" id="cardFront">
-            <div class="card-header">
-                <img src="assets/logo-main.png" alt="Logo" class="logo-left">
-                <div class="header-center">
-                    <div class="reg-no">Reg. No. : S/3369/SDM/NW/2018</div>
-                    <div class="org-name-hindi">अखिल भारतीय माहौर ग्वारे वैश्य महासभा</div>
-                    <div class="org-name-english">Akhil Bhartiya Mahour Gware Vaishya Mahasabha</div>
-                </div>
-                <svg class="logo-right" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="40" cy="40" r="38" stroke="#1a2d5a" stroke-width="2" fill="rgba(26,45,90,0.1)"/>
-                    <line x1="40" y1="12" x2="40" y2="60" stroke="#1a2d5a" stroke-width="2"/>
-                    <line x1="20" y1="24" x2="60" y2="24" stroke="#1a2d5a" stroke-width="2"/>
-                    <text x="40" y="53" text-anchor="middle" font-size="11" fill="#1a2d5a" font-family="serif" font-weight="bold">ॐ</text>
-                </svg>
-            </div>
-            <div class="card-member-type"><span>General Member</span></div>
-            <div class="card-body">
-                <div class="card-details">
-                    <div class="member-name" id="cardName">—</div>
-                    <div class="father-name" id="cardFather">S/o. Shri —</div>
-                    <div class="phone-number" id="cardPhone">+91 —</div>
-                    <div class="aadhaar-number" id="cardAadhaar">Aadhaar: —</div>
-                    <div class="city-state">
-                        <div id="cardCity">—</div>
-                        <div id="cardState">—</div>
-                    </div>
-                </div>
-                <img src="assets/logo-main.png" class="card-watermark" alt="Watermark">
-                <div class="card-photo-frame"><img id="cardPhoto" src="" alt="Member Photo"></div>
-            </div>
-            <div class="card-footer">
-                <div class="membership-no">Membership No. : <span id="cardMemberNo">—</span></div>
-                <div class="issuing-date">Issuing Date : <span id="cardDate">—</span></div>
-            </div>
-        </div>
-
-        <div class="id-card-back" id="cardBack">
-            <div class="card-back-header">
-                <img src="assets/logo-main.png" alt="Logo" class="logo-left">
-                <div class="header-center">
-                    <div class="reg-no">Reg. No. : S/3369/SDM/NW/2018</div>
-                    <div class="org-name-hindi">अखिल भारतीय माहौर ग्वारे वैश्य महासभा</div>
-                    <div class="org-name-english">Akhil Bhartiya Mahour Gware Vaishya Mahasabha</div>
-                </div>
-                <svg class="logo-right" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="40" cy="40" r="38" stroke="#1a2d5a" stroke-width="2" fill="rgba(26,45,90,0.1)"/>
-                    <text x="40" y="53" text-anchor="middle" font-size="11" fill="#1a2d5a" font-family="serif" font-weight="bold">ॐ</text>
-                </svg>
-            </div>
-            <div class="signature-section">
-                <div class="signature-box">
-                    <div class="sig-title">Auth. Signature</div>
-                    <div class="sig-line"></div>
-                    <div class="sig-name">(Meena Gupta)</div>
-                    <div class="sig-designation">National Secretary</div>
-                </div>
-                <img src="assets/logo-main.png" class="card-back-watermark" alt="Watermark">
-                <div class="signature-box">
-                    <div class="sig-title">Auth. Signature</div>
-                    <div class="sig-line"></div>
-                    <div class="sig-name">(Prakash Chandra Mandil)</div>
-                    <div class="sig-designation">National President</div>
-                </div>
-            </div>
-            <div class="card-instructions">
-                <h5>Instruction :</h5>
-                <p>This card is property of Akhil Bhartiya Mahour Gware Vaishya Mahasabha and is nontransferable.</p>
-            </div>
-            <div class="card-qr" id="cardQR"></div>
-            <div class="card-back-footer">
-                <div class="contact-item">📞 President - <span>9826654877</span></div>
-                <div class="contact-item">📞 Media Prabhari - <span>9893167002</span></div>
-            </div>
-        </div>
-    </div>
+    <!-- Hidden render area, kept strictly to avoid CSS crashes -->
+    <div class="card-render-area" id="renderArea"></div>
 
     <!-- Toast notification -->
     <div class="toast" id="toast"></div>

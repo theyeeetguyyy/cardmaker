@@ -72,7 +72,7 @@ async function loadMembers() {
         console.error('Error loading members:', err);
         document.getElementById('membersTableBody').innerHTML = `
             <tr>
-                <td colspan="11" style="text-align: center; padding: 40px; color: var(--red);">
+                <td colspan="13" style="text-align: center; padding: 40px; color: var(--red);">
                     ❌ Error loading data. Check Firebase configuration.
                     <br><small style="color: var(--gray-500);">${err.message}</small>
                 </td>
@@ -109,7 +109,7 @@ function renderTable(members) {
     if (members.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="11" style="text-align: center; padding: 40px; color: var(--gray-500);">
+                <td colspan="13" style="text-align: center; padding: 40px; color: var(--gray-500);">
                     कोई सदस्य नहीं मिला — No members found
                 </td>
             </tr>
@@ -128,6 +128,8 @@ function renderTable(members) {
             </td>
             <td style="font-weight: 600; color: var(--white);">${escapeHtml(m.name || '—')}</td>
             <td>${escapeHtml(m.fatherName || '—')}</td>
+            <td>${escapeHtml(m.dob || '—')}</td>
+            <td>${escapeHtml(m.gender || '—')}</td>
             <td>${escapeHtml(m.phone || '—')}</td>
             <td>${escapeHtml(m.aadhaar || '—')}</td>
             <td>${escapeHtml(m.city || '—')}</td>
@@ -184,7 +186,10 @@ function filterMembers() {
         (m.city && m.city.toLowerCase().includes(query)) ||
         (m.state && m.state.toLowerCase().includes(query)) ||
         (m.membershipNo && m.membershipNo.includes(query)) ||
-        (m.fatherName && m.fatherName.toLowerCase().includes(query))
+        (m.fatherName && m.fatherName.toLowerCase().includes(query)) ||
+        (m.dob && m.dob.includes(query)) ||
+        (m.gender && m.gender.toLowerCase().includes(query)) ||
+        (m.aadhaar && m.aadhaar.includes(query))
     );
 
     renderTable(filtered);
@@ -212,6 +217,15 @@ function viewMember(memberId) {
                 : ''
             }
             <div style="flex: 1; min-width: 200px;">
+                <table style="width: 100%; font-size: 0.9rem; border-collapse: collapse; text-align: left;">
+                    <tr><td style="padding: 4px 0; color: var(--gray-400);">Name</td> <td style="padding: 4px 0; color: var(--white); font-weight: 600;">${escapeHtml(member.name || '—')}</td></tr>
+                    <tr><td style="padding: 4px 0; color: var(--gray-400);">Father</td> <td style="padding: 4px 0; color: var(--white);">${escapeHtml(member.fatherName || '—')}</td></tr>
+                    <tr><td style="padding: 4px 0; color: var(--gray-400);">DOB</td> <td style="padding: 4px 0; color: var(--white);">${escapeHtml(member.dob || '—')}</td></tr>
+                    <tr><td style="padding: 4px 0; color: var(--gray-400);">Gender</td> <td style="padding: 4px 0; color: var(--white);">${escapeHtml(member.gender || '—')}</td></tr>
+                    <tr><td style="padding: 4px 0; color: var(--gray-400);">Phone</td> <td style="padding: 4px 0; color: var(--white);">${escapeHtml(member.phone || '—')}</td></tr>
+                    <tr><td style="padding: 4px 0; color: var(--gray-400);">Aadhaar</td> <td style="padding: 4px 0; color: var(--white);">${escapeHtml(member.aadhaar || '—')}</td></tr>
+                    <tr><td style="padding: 4px 0; color: var(--gray-400);">City</td> <td style="padding: 4px 0; color: var(--white);">${escapeHtml(member.city || '—')}</td></tr>
+                    <tr><td style="padding: 4px 0; color: var(--gray-400);">State</td> <td style="padding: 4px 0; color: var(--white);">${escapeHtml(member.state || '—')}</td></tr>
                 </table>
                 <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
                     <button class="btn-download png" style="padding: 8px 16px; font-size: 0.8rem;" onclick="downloadMemberCardPNG('${member.id}')">
@@ -250,11 +264,13 @@ function exportCSV() {
         return;
     }
 
-    const headers = ['#', 'Name', 'Father Name', 'Phone', 'Aadhaar', 'City', 'State', 'Membership No', 'Issuing Date'];
+    const headers = ['#', 'Name', 'Father Name', 'DOB', 'Gender', 'Phone', 'Aadhaar', 'City', 'State', 'Membership No', 'Issuing Date'];
     const rows = allMembers.map((m, i) => [
         i + 1,
         `"${(m.name || '').replace(/"/g, '""')}"`,
         `"${(m.fatherName || '').replace(/"/g, '""')}"`,
+        m.dob || '',
+        m.gender || '',
         m.phone || '',
         m.aadhaar || '',
         m.city || '',
