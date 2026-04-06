@@ -598,7 +598,7 @@ async function drawCardFront(canvas, data) {
     ctx.fillText(data.phone || '', lx, ly); ly += 15.5*S;
     ctx.fillText(`Aadhaar: ${maskAadhaar(data.aadhaar || '')}`, lx, ly); ly += 15.5*S;
 
-    ctx.font = `bold ${10.5*S}px 'Segoe UI', Arial, sans-serif`;
+    ctx.font = `${10.5*S}px 'Segoe UI', Arial, sans-serif`;
     ctx.fillText((data.city  || '').toUpperCase(), lx, ly); ly += 15.5*S;
     ctx.fillText((data.state || '').toUpperCase(), lx, ly);
 
@@ -889,6 +889,8 @@ async function saveToFirebase(data) {
         await newMemberRef.set({
             name: data.name,
             fatherName: data.fatherName,
+            dob: data.dob || '',
+            gender: data.gender || '',
             aadhaar: data.aadhaar,
             phone: data.phone,
             city: data.city,
@@ -916,6 +918,8 @@ async function updateInFirebase(data) {
         await db.ref('members/' + currentFirebaseKey).update({
             name: data.name,
             fatherName: data.fatherName,
+            dob: data.dob || '',
+            gender: data.gender || '',
             aadhaar: data.aadhaar,
             phone: data.phone,
             city: data.city,
