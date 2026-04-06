@@ -719,62 +719,72 @@ async function drawCardBack(canvas, data) {
     rr(ctx, sig2X, sigY, sigW, sigH, sigR);
     ctx.stroke();
 
+    // ── President Photo (Circle inside Right Box) ──
+    const presImg = await getPresidentImg();
+    let textCenterX = sig2X + sigW/2;
+    let sigAreaW = sigW;
+    let sigAreaX = sig2X;
+
+    if (presImg) {
+        const pSize = 46 * S;
+        const pX = sig2X + 10 * S;
+        const pY = sigY + (sigH - pSize) / 2;
+        
+        ctx.save();
+        ctx.beginPath();
+        // Draw a circle for the photo
+        ctx.arc(pX + pSize/2, pY + pSize/2, pSize/2, 0, Math.PI * 2);
+        
+        ctx.lineWidth = 1.5 * S;
+        ctx.strokeStyle = '#FF9933';
+        ctx.stroke();
+        
+        ctx.clip(); // Mask photo into the circle
+        ctx.drawImage(presImg, pX, pY, pSize, pSize);
+        ctx.restore();
+
+        // Shift text and signature to the right to make room for photo
+        textCenterX = sig2X + 105 * S;
+        sigAreaW = 90 * S;
+        sigAreaX = sig2X + 60 * S;
+    }
+
     ctx.fillStyle = NAVY;
     ctx.font = `bold ${8.5*S}px 'Segoe UI', Arial, sans-serif`;
     ctx.textAlign = 'center';
-    ctx.fillText('AUTH. SIGNATURE', sig2X + sigW/2, sigY + 16*S);
+    ctx.fillText('AUTH. SIGNATURE', textCenterX, sigY + 16*S);
 
-    // President Signature Image (with multiply blending to remove white background)
+    // President Signature Image
     const sigImg = await getPresidentSigImg();
     if (sigImg) {
         ctx.save();
-        rr(ctx, sig2X, sigY, sigW, sigH, sigR); // clip to box
+        rr(ctx, sigAreaX, sigY, sigAreaW, sigH, sigR); // clip to box
         ctx.clip();
         const siw = sigImg.naturalWidth || sigImg.width;
         const sih = sigImg.naturalHeight || sigImg.height;
-        // Trim some margins
-        const maxW = sigW - 20*S; // More margin
+        
+        const maxW = sigAreaW - 10*S; 
         const maxH = 40*S;
         const scale = Math.min(maxW / siw, maxH / sih); 
         const dw = siw * scale;
         const dh = sih * scale;
-        const dx = sig2X + (sigW - dw)/2;
+        const dx = sigAreaX + (sigAreaW - dw)/2;
         const dy = sigY + 22*S + (maxH - dh)/2;
 
         ctx.drawImage(sigImg, dx, dy, dw, dh);
         ctx.restore();
     } else {
         // Fallback line
-        ctx.beginPath(); ctx.moveTo(sig2X + 15*S, sigY + 50*S); ctx.lineTo(sig2X + sigW - 15*S, sigY + 50*S); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(sigAreaX, sigY + 50*S); ctx.lineTo(sigAreaX + sigAreaW, sigY + 50*S); ctx.stroke();
     }
 
     ctx.fillStyle = NAVY;
-    ctx.font = `bold ${8*S}px 'Nirmala UI', 'Arial Unicode MS', sans-serif`;
-    ctx.fillText('प्रकाश चंद्र मांडिल', sig2X + sigW/2, sigY + 62*S);
+    ctx.font = `bold ${7.5*S}px 'Nirmala UI', 'Arial Unicode MS', sans-serif`;
+    ctx.fillText('प्रकाश चंद्र मांडिल', textCenterX, sigY + 62*S);
 
     ctx.fillStyle = '#555';
     ctx.font = `${6.5*S}px 'Segoe UI', Arial, sans-serif`;
-    ctx.fillText('(National President)', sig2X + sigW/2, sigY + 72*S);
-
-    // ── President Photo (Center Gap) ──
-    const presImg = await getPresidentImg();
-    if (presImg) {
-        const pW = 60 * S;
-        const pH = 76 * S;
-        const pX = 250 * S - pW / 2;
-        const pY = sigY + 2 * S;
-        
-        ctx.save();
-        // Border
-        ctx.lineWidth = 1.5 * S;
-        ctx.strokeStyle = '#FF9933';
-        rr(ctx, pX, pY, pW, pH, 4*S);
-        ctx.stroke();
-        
-        ctx.clip();
-        ctx.drawImage(presImg, pX, pY, pW, pH);
-        ctx.restore();
-    }
+    ctx.fillText('(National President)', textCenterX, sigY + 72*S);
 
     // ── Instructions ──
     const instY = sigY + sigH + 16*S; 
