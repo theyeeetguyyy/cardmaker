@@ -1,8 +1,38 @@
 // ============================================
 // Admin.js — Admin Panel Logic
 // अखिल भारतीय माहौर ग्वारे वैश्य महासभा
-// Uses Firebase Realtime Database
+// Uses Firestore (members + memberPhotos collections)
 // ============================================
+
+
+
+// rules_version = '2';
+
+// service cloud.firestore {
+//   match /databases/{database}/documents {
+
+//     // This rule allows anyone with your Firestore database reference to view, edit,
+//     // and delete all data in your Firestore database. It is useful for getting
+//     // started, but it is configured to expire after 30 days because it
+//     // leaves your app open to attackers. At that time, all client
+//     // requests to your Firestore database will be denied.
+//     //
+//     // Make sure to write security rules for your app before that time, or else
+//     // all client requests to your Firestore database will be denied until you Update
+//     // your rules
+//     match /{document=**} {
+//       allow read, write: if request.time < timestamp.date(2030, 5, 8);
+//     }
+//   }
+// }
+
+
+
+
+
+
+
+const ADMIN_PASSWORD = 'admin123';
 
 let allMembers = [];
 // toastEl is already globally declared by app.js
@@ -38,6 +68,7 @@ function attemptLogin() {
 // --- Logout ---
 function logout() {
     sessionStorage.removeItem('abmgvm_admin');
+    allMembers = [];
     document.getElementById('adminDashboard').classList.remove('visible');
     document.getElementById('adminGate').style.display = 'block';
     document.getElementById('adminPassword').value = '';
@@ -47,27 +78,35 @@ function logout() {
 async function showDashboard() {
     document.getElementById('adminGate').style.display = 'none';
     document.getElementById('adminDashboard').classList.add('visible');
+
+    if (allMembers.length > 0) {
+        updateStats();
+        filterMembers();
+        return;
+    }
+
     await loadMembers();
 }
 
-// --- Load Members from Firebase Realtime Database ---
+// --- Refresh Members ---
+async function refreshMembers() {
+    allMembers = [];
+    const btn = document.getElementById('btnRefresh');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>';
+    await loadMembers();
+    btn.disabled = false;
+    btn.innerHTML = '🔄 Refresh';
+    showToast('✅ Data refreshed!', 'success');
+}
+
+// --- Load Members from Firestore (metadata only — no photos) ---
 async function loadMembers() {
     try {
-        const snapshot = await db.ref('members').orderByChild('createdAt').once('value');
-        
-        allMembers = [];
-        if (snapshot.exists()) {
-            snapshot.forEach(childSnap => {
-                allMembers.push({ id: childSnap.key, ...childSnap.val() });
-            });
-        }
-
-        // Reverse to show newest first
-        allMembers.reverse();
-
+        const snapshot = await db.collection('members').orderBy('createdAt', 'desc').get();
+        allMembers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         updateStats();
         renderTable(allMembers);
-
     } catch (err) {
         console.error('Error loading members:', err);
         document.getElementById('membersTableBody').innerHTML = `
@@ -85,16 +124,12 @@ async function loadMembers() {
 function updateStats() {
     document.getElementById('statTotal').textContent = allMembers.length;
 
-    // Count today's members
     const today = new Date().toDateString();
     let todayCount = 0;
     const stateSet = new Set();
 
     allMembers.forEach(m => {
-        if (m.createdAt) {
-            const memberDate = new Date(m.createdAt);
-            if (memberDate.toDateString() === today) todayCount++;
-        }
+        if (m.createdAt && new Date(m.createdAt).toDateString() === today) todayCount++;
         if (m.state) stateSet.add(m.state);
     });
 
@@ -121,10 +156,7 @@ function renderTable(members) {
         <tr>
             <td>${i + 1}</td>
             <td>
-                ${m.photo
-                    ? `<img src="${m.photo}" class="member-photo-thumb" alt="${escapeHtml(m.name || '')}">`
-                    : '<span style="color: var(--gray-500);">N/A</span>'
-                }
+                <span style="color: var(--gray-500); font-size: 0.75rem;">📷 On demand</span>
             </td>
             <td style="font-weight: 600; color: var(--white);">${escapeHtml(m.name || '—')}</td>
             <td>${escapeHtml(m.fatherName || '—')}</td>
@@ -150,21 +182,20 @@ function editMember(id) {
     window.location.href = `index.html?edit=${id}`;
 }
 
-// --- Delete Member ---
+// --- Delete Member (batch deletes both docs atomically) ---
 async function deleteMember(id) {
-    if (!confirm('Are you sure you want to permanently delete this member?')) {
-        return;
-    }
-    
+    if (!confirm('Are you sure you want to permanently delete this member?')) return;
+
     try {
-        await db.ref('members/' + id).remove();
+        const batch = db.batch();
+        batch.delete(db.collection('members').doc(id));
+        batch.delete(db.collection('memberPhotos').doc(id));
+        await batch.commit();
+
         showToast('🗑️ Member deleted successfully', 'success');
-        
-        // Remove from local array to avoid refetching everything
         allMembers = allMembers.filter(m => m.id !== id);
         updateStats();
-        filterMembers(); // re-renders current view
-        
+        filterMembers();
     } catch (err) {
         console.error('Delete error:', err);
         showToast('Error deleting member', 'error');
@@ -195,12 +226,27 @@ function filterMembers() {
     renderTable(filtered);
 }
 
-// --- View Member Details ---
-function viewMember(memberId) {
+// --- View Member Details (fetches photo on demand) ---
+async function viewMember(memberId) {
     const member = allMembers.find(m => m.id === memberId);
     if (!member) return;
 
+    // Show modal with a loading state immediately
     const modalBody = document.getElementById('modalBody');
+    modalBody.innerHTML = `
+        <div style="text-align:center; padding: 40px; color: var(--gray-400);">
+            <span class="spinner"></span> Loading...
+        </div>
+    `;
+    document.getElementById('memberModal').classList.add('visible');
+
+    // Fetch photo on demand
+    let photo = null;
+    try {
+        const photoSnap = await db.collection('memberPhotos').doc(memberId).get();
+        if (photoSnap.exists) photo = photoSnap.data().photo;
+    } catch (e) { /* non-critical */ }
+
     modalBody.innerHTML = `
         <div style="text-align: center; margin-bottom: 20px;">
             <h3 style="color: var(--saffron); font-family: var(--font-hindi); margin-bottom: 4px;">
@@ -212,9 +258,9 @@ function viewMember(memberId) {
         </div>
 
         <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; justify-content: center;">
-            ${member.photo
-                ? `<img src="${member.photo}" style="width: 120px; height: 144px; object-fit: cover; border-radius: 8px; border: 2px solid var(--saffron);" alt="${escapeHtml(member.name || '')}">`
-                : ''
+            ${photo
+                ? `<img src="${photo}" style="width: 120px; height: 144px; object-fit: cover; border-radius: 8px; border: 2px solid var(--saffron);" alt="${escapeHtml(member.name || '')}">`
+                : '<div style="width:120px;height:144px;background:rgba(255,255,255,0.05);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--gray-500);">📷</div>'
             }
             <div style="flex: 1; min-width: 200px;">
                 <table style="width: 100%; font-size: 0.9rem; border-collapse: collapse; text-align: left;">
@@ -238,8 +284,6 @@ function viewMember(memberId) {
             </div>
         </div>
     `;
-
-    document.getElementById('memberModal').classList.add('visible');
 }
 
 // --- Close Modal ---
@@ -280,57 +324,64 @@ function exportCSV() {
     ]);
 
     let csv = headers.join(',') + '\n';
-    rows.forEach(row => {
-        csv += row.join(',') + '\n';
-    });
+    rows.forEach(row => { csv += row.join(',') + '\n'; });
 
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const blobUrl = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
+    link.href = blobUrl;
     link.download = `ABMGVM_Members_${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
+    URL.revokeObjectURL(blobUrl);
 
     showToast('✅ CSV डाउनलोड हो गया! CSV exported!', 'success');
 }
 
-// --- Card Download Logic for Admin ---
-
-function populateRenderCard(data) {
-    // Kept empty in case HTML-reference is still needed briefly, 
-    // but canvas draws directly from the 'data' object now.
+// --- Fetch photo for a member (used in downloads) ---
+async function fetchMemberPhoto(memberId) {
+    try {
+        const snap = await db.collection('memberPhotos').doc(memberId).get();
+        return snap.exists ? snap.data().photo : null;
+    } catch (e) {
+        return null;
+    }
 }
 
+// --- Card Download Logic for Admin ---
 async function downloadMemberCardPNG(memberId) {
     const member = allMembers.find(m => m.id === memberId);
     if (!member) return;
-    
+
     showToast('🖼️ PNG बन रहा है... Generating PNG...', 'success');
 
     try {
+        const photo = await fetchMemberPhoto(memberId);
+        const memberWithPhoto = { ...member, photo };
+
         const frontCanvas = document.createElement('canvas');
         frontCanvas.width = 1500;
         frontCanvas.height = 930;
-        await drawCardFront(frontCanvas, member);
+        await drawCardFront(frontCanvas, memberWithPhoto);
 
         const backCanvas = document.createElement('canvas');
         backCanvas.width = 1500;
         backCanvas.height = 930;
-        await drawCardBack(backCanvas, member);
+        await drawCardBack(backCanvas, memberWithPhoto);
 
         const gap = 60;
-        const combinedCanvas = document.createElement('canvas');
-        combinedCanvas.width = 1500;
-        combinedCanvas.height = 930 * 2 + gap;
-        const ctx = combinedCanvas.getContext('2d');
+        const combined = document.createElement('canvas');
+        combined.width = 1500;
+        combined.height = 930 * 2 + gap;
+        const ctx = combined.getContext('2d');
         ctx.fillStyle = '#1a2d5a';
-        ctx.fillRect(0, 0, combinedCanvas.width, combinedCanvas.height);
+        ctx.fillRect(0, 0, combined.width, combined.height);
         ctx.drawImage(frontCanvas, 0, 0);
         ctx.drawImage(backCanvas, 0, 930 + gap);
 
         const safeName = (member.name || 'Member').replace(/\s+/g, '_');
         const link = document.createElement('a');
         link.download = `ABMGVM_Card_${safeName}.png`;
-        link.href = combinedCanvas.toDataURL('image/png');
+        link.href = combined.toDataURL('image/png');
         link.click();
         showToast('✅ PNG डाउनलोड हो गया!', 'success');
     } catch (err) {
@@ -346,33 +397,34 @@ async function downloadMemberCardPDF(memberId) {
     showToast('📄 PDF बन रहा है...', 'success');
 
     try {
+        const photo = await fetchMemberPhoto(memberId);
+        const memberWithPhoto = { ...member, photo };
+
         const frontCanvas = document.createElement('canvas');
         frontCanvas.width = 1500;
         frontCanvas.height = 930;
-        await drawCardFront(frontCanvas, member);
+        await drawCardFront(frontCanvas, memberWithPhoto);
 
         const backCanvas = document.createElement('canvas');
         backCanvas.width = 1500;
         backCanvas.height = 930;
-        await drawCardBack(backCanvas, member);
+        await drawCardBack(backCanvas, memberWithPhoto);
 
         const { jsPDF } = window.jspdf;
         const cardW = 85.6, cardH = 53.98;
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pageW = pdf.internal.pageSize.getWidth();
-        const pageH = pdf.internal.pageSize.getHeight();
         const xOff = (pageW - cardW) / 2;
 
         pdf.setFillColor(245, 245, 245);
-        pdf.rect(0, 0, pageW, pageH, 'F');
-
+        pdf.rect(0, 0, pageW, pdf.internal.pageSize.getHeight(), 'F');
         pdf.setFontSize(11);
         pdf.setTextColor(26, 45, 90);
         pdf.text('Akhil Bhartiya Mahour Gware Vaishya Mahasabha', pageW / 2, 14, { align: 'center' });
-        pdf.setFontSize(8); 
+        pdf.setFontSize(8);
         pdf.setTextColor(80, 80, 80);
         pdf.text('Membership Card', pageW / 2, 20, { align: 'center' });
-        
+
         pdf.addImage(frontCanvas.toDataURL('image/png'), 'PNG', xOff, 26, cardW, cardH);
         pdf.addImage(backCanvas.toDataURL('image/png'), 'PNG', xOff, 26 + cardH + 12, cardW, cardH);
 

@@ -6,7 +6,6 @@
 const firebaseConfig = {
     apiKey: "AIzaSyCrjf9UyVs9q9s0x452RK5QDxyeInN4rLc",
     authDomain: "samaj-37e53.firebaseapp.com",
-    databaseURL: "https://samaj-37e53-default-rtdb.firebaseio.com",
     projectId: "samaj-37e53",
     storageBucket: "samaj-37e53.firebasestorage.app",
     messagingSenderId: "152322233357",
@@ -16,8 +15,9 @@ const firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
-// Realtime Database reference
-const db = firebase.database();
-
-// Admin password (change this!)
-const ADMIN_PASSWORD = "admin123";
+// Firestore instance
+// Data layout:
+//   members/{id}      — all metadata (name, aadhaar, phone, etc.) — NO photo
+//   memberPhotos/{id} — { photo: base64 }  (fetched on demand only)
+//   meta/counter      — { value: number }  (atomic membership counter)
+const db = firebase.firestore();

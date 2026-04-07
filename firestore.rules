@@ -1,0 +1,23 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Public members metadata — anyone can read (needed for "Find Card" search)
+    // Write is open since there is no auth; rely on client-side validation
+    match /members/{id} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Photos stored separately so metadata queries never pull photo bytes
+    match /memberPhotos/{id} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Atomic membership counter
+    match /meta/{doc} {
+      allow read, write: if true;
+    }
+  }
+}

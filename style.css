@@ -186,6 +186,47 @@ body {
     text-transform: uppercase;
 }
 
+.page-footer {
+    margin-top: 36px;
+    padding: 0 0 16px;
+}
+
+.footer-photo-strip {
+    position: relative;
+    width: 100%;
+    min-height: 180px;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: var(--shadow-lg);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.footer-photo-strip::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(8, 16, 40, 0.08) 0%, rgba(8, 16, 40, 0.45) 100%);
+    pointer-events: none;
+}
+
+.footer-people-photo {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 180px;
+    object-fit: cover;
+    object-position: center 28%;
+}
+
+.footer-caption {
+    margin-top: 12px;
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--gray-300);
+    letter-spacing: 0.8px;
+}
+
 /* ---- Glass Panel ---- */
 .glass-panel {
     background: rgba(255, 255, 255, 0.06);
@@ -978,7 +1019,7 @@ body {
 /* ---- Admin Link ---- */
 .admin-link {
     text-align: center;
-    margin-top: 40px;
+    margin-top: 18px;
     padding-bottom: 40px;
 }
 
@@ -1363,6 +1404,11 @@ body {
     .download-buttons {
         flex-direction: column;
         align-items: center;
+    }
+
+    .footer-photo-strip,
+    .footer-people-photo {
+        min-height: 130px;
     }
 
     .btn-download {

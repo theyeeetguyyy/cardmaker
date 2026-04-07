@@ -5,16 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel | अखिल भारतीय माहौर ग्वारे वैश्य महासभा</title>
     <meta name="description" content="Admin Dashboard - Akhil Bhartiya Mahour Gware Vaishya Mahasabha Card Management Panel">
-    <link rel="stylesheet" href="style.css?v=1.2">
+    <link rel="stylesheet" href="style.css?v=4.0">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <!-- html2canvas for image capture -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <!-- jsPDF for PDF generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- QRCode.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -48,6 +44,7 @@
                 </div>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <button class="btn-export" id="btnExport" onclick="exportCSV()">📥 Export CSV</button>
+                    <button class="btn-export" id="btnRefresh" onclick="refreshMembers()">🔄 Refresh</button>
                     <a href="index.html" style="text-decoration: none;">
                         <button class="btn-export">🏠 Home</button>
                     </a>
@@ -132,7 +129,7 @@
     <div class="toast" id="toast"></div>
 
     <script src="firebase-config.js"></script>
-    <script src="app.js?v=5.7"></script>
-    <script src="admin.js?v=1.4"></script>
+    <script src="app.js?v=6.0"></script>
+    <script src="admin.js?v=2.0"></script>
 </body>
 </html>

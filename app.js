@@ -7,6 +7,7 @@
 // --- State ---
 let uploadedPhotoDataURL = null;
 let currentMemberData = null;
+let originalMemberData = null;
 let currentFirebaseKey = null; // Track the Firebase key for edits
 let isEditMode = false;
 
@@ -19,104 +20,126 @@ const cardSection = document.getElementById('cardSection');
 const btnGenerate = document.getElementById('btnGenerate');
 const toastEl = document.getElementById('toast');
 
+function formatAadhaarInput(value) {
+    const digits = (value || '').replace(/\D/g, '').slice(0, 12);
+    let formatted = '';
+    for (let i = 0; i < digits.length; i++) {
+        if (i > 0 && i % 4 === 0) formatted += ' ';
+        formatted += digits[i];
+    }
+    return formatted;
+}
+
+function getPhoneDigits(value) {
+    return (value || '').replace(/\D/g, '').slice(-10);
+}
+
 // --- Aadhaar formatting ---
 const aadhaarInput = document.getElementById('aadhaarNo');
 if (aadhaarInput) {
     aadhaarInput.addEventListener('input', function () {
-        let val = this.value.replace(/\D/g, '');
-        if (val.length > 12) val = val.slice(0, 12);
-        // Format: XXXX XXXX XXXX
-        let formatted = '';
-        for (let i = 0; i < val.length; i++) {
-            if (i > 0 && i % 4 === 0) formatted += ' ';
-            formatted += val[i];
-        }
-        this.value = formatted;
+        this.value = formatAadhaarInput(this.value);
     });
 }
 
 // --- Phone formatting ---
-const phoneInput = document.getElementById('phoneNo');
-if (phoneInput) {
-    phoneInput.addEventListener('input', function () {
-        let val = this.value.replace(/[^\d+]/g, '');
-        if (!val.startsWith('+91') && !val.startsWith('+')) {
-            if (val.startsWith('91') && val.length > 10) {
-                val = '+' + val;
-            } else if (val.length <= 10) {
-                val = '+91 ' + val;
-            }
+function normalizeIndianPhone(value) {
+    const localDigits = getPhoneDigits(value);
+    return `+91 ${localDigits}`;
+}
+
+function attachIndianPhoneFormatter(input) {
+    if (!input) return;
+
+    input.addEventListener('focus', function () {
+        if (!this.value.trim()) {
+            this.value = '+91 ';
         }
-        this.value = val;
+    });
+
+    input.addEventListener('input', function () {
+        this.value = normalizeIndianPhone(this.value);
     });
 }
 
+const phoneInput = document.getElementById('phoneNo');
+const findPhoneInput = document.getElementById('findPhone');
+attachIndianPhoneFormatter(phoneInput);
+attachIndianPhoneFormatter(findPhoneInput);
+
 // --- Photo Upload ---
 if (photoInput) {
-    photoInput.addEventListener('change', function (e) {
+    photoInput.addEventListener('change', async function (e) {
         const file = e.target.files[0];
         if (!file) return;
 
         // Validate file size (2MB max)
         if (file.size > 2 * 1024 * 1024) {
             showToast('फोटो 2MB से कम होनी चाहिए! Photo must be under 2MB.', 'error');
+            this.value = '';
             return;
         }
 
         // Validate it's an image
         if (!file.type.startsWith('image/')) {
             showToast('कृपया एक इमेज फ़ाइल चुनें! Please select an image file.', 'error');
+            this.value = '';
             return;
         }
 
         const reader = new FileReader();
-        reader.onload = function (ev) {
-            uploadedPhotoDataURL = ev.target.result;
-            photoPreview.innerHTML = `<img src="${uploadedPhotoDataURL}" alt="Your Photo">`;
-            photoUploadArea.style.borderColor = 'var(--green)';
+        reader.onload = async function (ev) {
+            try {
+                // Store the already-compressed base64 image so new saves and later edits
+                // do not keep re-encoding the same photo.
+                uploadedPhotoDataURL = await compressImage(ev.target.result, 300, 360, 0.7);
+                photoPreview.innerHTML = `<img src="${uploadedPhotoDataURL}" alt="Your Photo">`;
+                photoUploadArea.style.borderColor = 'var(--green)';
+            } catch (err) {
+                console.error('Photo compression error:', err);
+                showToast('फोटो प्रोसेस नहीं हो पाई! Could not process the photo.', 'error');
+            } finally {
+                photoInput.value = '';
+            }
         };
         reader.readAsDataURL(file);
     });
 }
 
 // --- Duplicate Check: Aadhaar & Phone ---
-async function checkDuplicate(aadhaarNo, phoneNo) {
+async function checkDuplicate(aadhaarNo, phoneNo, previousData = null) {
     try {
-        // Check Aadhaar
-        const aadhaarSnap = await db.ref('members')
-            .orderByChild('aadhaar')
-            .equalTo(aadhaarNo)
-            .once('value');
-        if (aadhaarSnap.exists()) {
-            // In edit mode, allow if the match is the current record
-            if (isEditMode && currentFirebaseKey) {
-                const keys = Object.keys(aadhaarSnap.val());
-                const otherKeys = keys.filter(k => k !== currentFirebaseKey);
-                if (otherKeys.length > 0) return 'aadhaar';
-            } else {
-                return 'aadhaar';
+        const shouldCheckAadhaar = !previousData || (previousData.aadhaar || '') !== aadhaarNo;
+        const shouldCheckPhone = !previousData || getPhoneDigits(previousData.phone) !== getPhoneDigits(phoneNo);
+
+        if (shouldCheckAadhaar) {
+            const snap = await db.collection('members').where('aadhaar', '==', aadhaarNo).get();
+            if (!snap.empty) {
+                if (isEditMode && currentFirebaseKey) {
+                    const others = snap.docs.filter(d => d.id !== currentFirebaseKey);
+                    if (others.length > 0) return 'aadhaar';
+                } else {
+                    return 'aadhaar';
+                }
             }
         }
 
-        // Check Phone
-        const phoneSnap = await db.ref('members')
-            .orderByChild('phone')
-            .equalTo(phoneNo)
-            .once('value');
-        if (phoneSnap.exists()) {
-            if (isEditMode && currentFirebaseKey) {
-                const keys = Object.keys(phoneSnap.val());
-                const otherKeys = keys.filter(k => k !== currentFirebaseKey);
-                if (otherKeys.length > 0) return 'phone';
-            } else {
-                return 'phone';
+        if (shouldCheckPhone) {
+            const snap = await db.collection('members').where('phone', '==', phoneNo).get();
+            if (!snap.empty) {
+                if (isEditMode && currentFirebaseKey) {
+                    const others = snap.docs.filter(d => d.id !== currentFirebaseKey);
+                    if (others.length > 0) return 'phone';
+                } else {
+                    return 'phone';
+                }
             }
         }
 
-        return null; // No duplicate
+        return null;
     } catch (err) {
-        console.warn('Duplicate check failed (Firebase may be unreachable):', err);
-        return null; // Allow if check fails
+        console.warn('Duplicate check failed:', err);
+        throw err;
     }
 }
 
@@ -144,24 +167,19 @@ if (findModal) {
 
 async function submitFindCard(e) {
     e.preventDefault();
-    
-    let phoneQuery = document.getElementById('findPhone').value.trim();
+
+    let phoneQuery = normalizeIndianPhone(document.getElementById('findPhone').value.trim());
+    document.getElementById('findPhone').value = phoneQuery;
     const aadhaarQuery = document.getElementById('findAadhaar').value.trim();
     const btn = document.getElementById('btnFindCardSearch');
 
-    // Normalize: keep only last 10 digits for comparison
-    const phoneDigits = phoneQuery.replace(/\D/g, '').slice(-10);
-
-    // Format aadhaar exactly as we do in the input
-    let valAadhaar = aadhaarQuery.replace(/\D/g, '');
-    if (valAadhaar.length > 12) valAadhaar = valAadhaar.slice(0, 12);
-    let formattedAadhaar = '';
-    for (let i = 0; i < valAadhaar.length; i++) {
-        if (i > 0 && i % 4 === 0) formattedAadhaar += ' ';
-        formattedAadhaar += valAadhaar[i];
+    const phoneDigits = getPhoneDigits(phoneQuery);
+    if (phoneDigits.length !== 10) {
+        showToast('फोन नंबर 10 अंकों का होना चाहिए! Phone number must be 10 digits after +91.', 'error');
+        return;
     }
-    const finalAadhaar = formattedAadhaar;
 
+    const finalAadhaar = formatAadhaarInput(aadhaarQuery);
     if (finalAadhaar.replace(/\s/g, '').length !== 12) {
         showToast('आधार नंबर 12 अंकों का होना चाहिए!', 'error');
         return;
@@ -171,19 +189,19 @@ async function submitFindCard(e) {
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner"></span> खोजा जा रहा है...';
 
-        const snapshot = await db.ref('members').orderByChild('aadhaar').equalTo(finalAadhaar).once('value');
-        if (!snapshot.exists()) {
+        const snapshot = await db.collection('members').where('aadhaar', '==', finalAadhaar).get();
+        if (snapshot.empty) {
             showToast('❌ इस आधार नंबर से कोई कार्ड नहीं मिला!', 'error');
             return;
         }
 
         let foundMember = null;
         let foundKey = null;
-        snapshot.forEach(child => {
-            const dbPhoneDigits = (child.val().phone || '').replace(/\D/g, '').slice(-10);
+        snapshot.forEach(doc => {
+            const dbPhoneDigits = getPhoneDigits(doc.data().phone || '');
             if (dbPhoneDigits === phoneDigits) {
-                foundMember = child.val();
-                foundKey = child.key;
+                foundMember = doc.data();
+                foundKey = doc.id;
             }
         });
 
@@ -192,40 +210,39 @@ async function submitFindCard(e) {
             return;
         }
 
-        // Successfully found! Load the data to current mode
-        currupdaentMemberData = foundMember;
+        // Fetch photo on demand
+        const photoSnap = await db.collection('memberPhotos').doc(foundKey).get();
+        if (photoSnap.exists) foundMember.photo = photoSnap.data().photo;
+
+        currentMemberData = foundMember;
+        originalMemberData = { ...foundMember };
         currentFirebaseKey = foundKey;
-        isEditMode = true; // Technically they can edit it now, but we'll adapt to just showing it
-        
+        isEditMode = true;
+
         btnGenerate.innerHTML = '✏️ कार्ड अपडेट करें — Update Card';
-        
-        // Populate card
-        populateCard(currentMemberData);
-        
-        // Pre-fill form fields
+
+        await populateCard(currentMemberData);
+
         document.getElementById('memberName').value = currentMemberData.name || '';
         document.getElementById('fatherName').value = currentMemberData.fatherName || '';
         document.getElementById('dob').value = currentMemberData.dob || '';
         document.getElementById('gender').value = currentMemberData.gender || '';
         document.getElementById('aadhaarNo').value = currentMemberData.aadhaar || '';
-        document.getElementById('phoneNo').value = currentMemberData.phone || '';
+        document.getElementById('phoneNo').value = normalizeIndianPhone(currentMemberData.phone || '');
         document.getElementById('city').value = currentMemberData.city || '';
         document.getElementById('state').value = currentMemberData.state || '';
-        
+
         uploadedPhotoDataURL = currentMemberData.photo;
         photoPreview.innerHTML = `<img src="${uploadedPhotoDataURL}" alt="Your Photo">`;
         photoUploadArea.style.borderColor = 'var(--green)';
 
         closeFindModal();
-        
-        // Show card section
         cardSection.classList.add('visible');
         cardSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        
         showToast('✅ कार्ड मिल गया! Card retrieved successfully!', 'success');
-        
+
     } catch (err) {
-        console.error("Find card error:", err);
+        console.error('Find card error:', err);
         showToast('सर्च करने में त्रुटि आई! Error searching.', 'error');
     } finally {
         btn.disabled = false;
@@ -249,8 +266,8 @@ if (cardForm) {
     const fatherName = document.getElementById('fatherName').value.trim();
     const dob = document.getElementById('dob').value;
     const gender = document.getElementById('gender').value;
-    const aadhaarNo = document.getElementById('aadhaarNo').value.trim();
-    const phoneNo = document.getElementById('phoneNo').value.trim();
+    const aadhaarNo = formatAadhaarInput(document.getElementById('aadhaarNo').value.trim());
+    const phoneNo = normalizeIndianPhone(document.getElementById('phoneNo').value.trim());
     const city = document.getElementById('city').value.trim();
     const state = document.getElementById('state').value;
 
@@ -261,13 +278,23 @@ if (cardForm) {
         return;
     }
 
+    if (getPhoneDigits(phoneNo).length !== 10) {
+        showToast('फोन नंबर 10 अंकों का होना चाहिए! Phone number must be 10 digits after +91.', 'error');
+        return;
+    }
+
+    document.getElementById('aadhaarNo').value = aadhaarNo;
+    document.getElementById('phoneNo').value = phoneNo;
+
     // Disable button
     btnGenerate.disabled = true;
     btnGenerate.innerHTML = '<span class="spinner"></span> कार्ड बन रहा है...';
 
     try {
+        const previousData = isEditMode && originalMemberData ? { ...originalMemberData } : null;
+
         // Check for duplicate Aadhaar / Phone
-        const duplicate = await checkDuplicate(aadhaarNo, phoneNo);
+        const duplicate = await checkDuplicate(aadhaarNo, phoneNo, previousData);
         if (duplicate === 'aadhaar') {
             showToast('❌ इस आधार नंबर से पहले ही कार्ड बन चुका है! Card already exists with this Aadhaar number.', 'error');
             return;
@@ -290,10 +317,11 @@ if (cardForm) {
             currentMemberData.photo = uploadedPhotoDataURL;
 
             // Populate card
-            populateCard(currentMemberData);
+            await populateCard(currentMemberData);
 
             // Update in Firebase
-            await updateInFirebase(currentMemberData);
+            const didUpdate = await updateInFirebase(currentMemberData, previousData);
+            originalMemberData = { ...currentMemberData };
 
             // Exit edit mode
             isEditMode = false;
@@ -303,7 +331,12 @@ if (cardForm) {
             cardSection.classList.add('visible');
             cardSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-            showToast('✅ कार्ड अपडेट हो गया! Card updated successfully!', 'success');
+            showToast(
+                didUpdate
+                    ? '✅ कार्ड अपडेट हो गया! Card updated successfully!'
+                    : 'ℹ️ कोई बदलाव नहीं मिला। No changes were detected.',
+                'success'
+            );
         } else {
             // --- NEW CARD MODE ---
             const membershipNo = await getNextMembershipNo();
@@ -325,10 +358,11 @@ if (cardForm) {
             };
 
             // Populate card
-            populateCard(currentMemberData);
+            await populateCard(currentMemberData);
 
             // Save to Firebase
             await saveToFirebase(currentMemberData);
+            originalMemberData = { ...currentMemberData };
 
             // Show card section
             cardSection.classList.add('visible');
@@ -400,6 +434,19 @@ function getPresidentSigImg() {
     });
 }
 
+// Cached tarazu logo
+let _tarazuImg = null;
+function getTarazuImg() {
+    if (_tarazuImg) return Promise.resolve(_tarazuImg);
+    return new Promise(resolve => {
+        const img = new Image();
+        img.onload  = () => { _tarazuImg = img; resolve(img); };
+        img.onerror = () => resolve(null);
+        img.crossOrigin = 'anonymous';
+        img.src = 'assets/tarazu.png';
+    });
+}
+
 function loadImg(src) {
     return new Promise(resolve => {
         if (!src) return resolve(null);
@@ -408,6 +455,19 @@ function loadImg(src) {
         img.onerror = () => resolve(null);
         img.src = src;
     });
+}
+
+function getMemberMeta(data) {
+    return {
+        name: data.name,
+        fatherName: data.fatherName,
+        dob: data.dob || '',
+        gender: data.gender || '',
+        aadhaar: data.aadhaar,
+        phone: data.phone,
+        city: data.city,
+        state: data.state,
+    };
 }
 
 // Rounded rectangle path helper
@@ -530,7 +590,7 @@ async function drawCardFront(canvas, data) {
     ctx.fillText('Akhil Bhartiya Mahour Gware Vaishya Mahasabha', W/2, 54*S);
 
     // ── Right logo (tarazu, right side) ──
-    const tarazuLogo = await loadImg('assets/tarazu.png');
+    const tarazuLogo = await getTarazuImg();
     if (tarazuLogo) {
         ctx.save();
         ctx.beginPath();
@@ -655,7 +715,7 @@ async function drawCardBack(canvas, data) {
         ctx.drawImage(logo, 14*S, 10*S, 44*S, 44*S); ctx.restore();
         ctx.beginPath(); ctx.arc(36*S, 32*S, 22*S, 0, Math.PI * 2); ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1.5*S; ctx.stroke();
         // Right
-        const tarazuLogo = await loadImg('assets/tarazu.png');
+        const tarazuLogo = await getTarazuImg();
         if (tarazuLogo) {
             ctx.save(); ctx.beginPath(); ctx.arc((500-36)*S, 32*S, 22*S, 0, Math.PI * 2); ctx.clip();
             ctx.drawImage(tarazuLogo, (500-58)*S, 10*S, 44*S, 44*S); ctx.restore();
@@ -789,7 +849,7 @@ async function drawCardBack(canvas, data) {
     ctx.fillText('Auth. Signature', sig3X + sigW/2, sigY + 16*S);
 
     // Secretary Signature Image
-    const secSigImg = await loadImg('assets/sectry- signature.png');
+    const secSigImg = await loadImg('assets/sectry-signature.png');
     if (secSigImg) {
         ctx.save();
         rr(ctx, sig3X, sigY, sigW, sigH, sigR); // clip to box
@@ -863,76 +923,70 @@ async function populateCard(data) {
 
 
 
-// --- Get next membership number (Firebase RTDB transaction) ---
+// --- Get next membership number (Firestore atomic transaction) ---
 async function getNextMembershipNo() {
-    try {
-        const counterRef = db.ref('meta/counter');
-        const result = await counterRef.transaction(function (current) {
-            return (current || 0) + 1;
-        });
-        const num = result.snapshot.val();
-        return 'JM' + String(num).padStart(4, '0');
-    } catch (err) {
-        console.warn('Firebase counter error, using random:', err);
-        // Fallback: generate a random number
-        const num = Math.floor(Math.random() * 9000);
-        return 'JM' + String(num).padStart(4, '0');
-    }
+    const counterRef = db.collection('meta').doc('counter');
+    const num = await db.runTransaction(async (txn) => {
+        const snap = await txn.get(counterRef);
+        const next = (snap.exists ? snap.data().value : 0) + 1;
+        txn.set(counterRef, { value: next });
+        return next;
+    });
+    return 'JM' + String(num).padStart(4, '0');
 }
 
-// --- Save to Firebase Realtime Database ---
+// --- Save to Firestore (metadata + photo in separate docs, batched) ---
 async function saveToFirebase(data) {
-    try {
-        // Compress the photo for storage (reduce base64 size)
-        const compressedPhoto = await compressImage(data.photo, 300, 360, 0.7);
+    const memberRef = db.collection('members').doc();
+    currentFirebaseKey = memberRef.id;
 
-        const newMemberRef = db.ref('members').push();
-        currentFirebaseKey = newMemberRef.key; // Track key for future edits
-        await newMemberRef.set({
-            name: data.name,
-            fatherName: data.fatherName,
-            dob: data.dob || '',
-            gender: data.gender || '',
-            aadhaar: data.aadhaar,
-            phone: data.phone,
-            city: data.city,
-            state: data.state,
-            photo: compressedPhoto,
-            membershipNo: data.membershipNo,
-            issuingDate: data.issuingDate,
-            createdAt: new Date().toISOString()
-        });
-        console.log('✅ Saved to Firebase RTDB, key:', currentFirebaseKey);
-    } catch (err) {
-        console.error('Firebase save error:', err);
-    }
+    const batch = db.batch();
+    batch.set(memberRef, {
+        ...getMemberMeta(data),
+        membershipNo: data.membershipNo,
+        issuingDate: data.issuingDate,
+        createdAt: new Date().toISOString()
+    });
+    batch.set(db.collection('memberPhotos').doc(currentFirebaseKey), {
+        photo: data.photo || null
+    });
+    await batch.commit();
+    console.log('✅ Saved to Firestore, id:', currentFirebaseKey);
 }
 
-// --- Update existing record in Firebase ---
-async function updateInFirebase(data) {
-    if (!currentFirebaseKey) {
-        console.warn('No Firebase key to update');
-        return;
-    }
-    try {
-        const compressedPhoto = await compressImage(data.photo, 300, 360, 0.7);
+// --- Update existing record in Firestore ---
+async function updateInFirebase(data, previousData = null) {
+    if (!currentFirebaseKey) throw new Error('No Firestore ID to update');
 
-        await db.ref('members/' + currentFirebaseKey).update({
-            name: data.name,
-            fatherName: data.fatherName,
-            dob: data.dob || '',
-            gender: data.gender || '',
-            aadhaar: data.aadhaar,
-            phone: data.phone,
-            city: data.city,
-            state: data.state,
-            photo: compressedPhoto,
-            updatedAt: new Date().toISOString()
-        });
-        console.log('✅ Updated in Firebase RTDB, key:', currentFirebaseKey);
-    } catch (err) {
-        console.error('Firebase update error:', err);
+    const nextMeta = getMemberMeta(data);
+    const prevMeta = previousData ? getMemberMeta(previousData) : {};
+    const changedFields = {};
+
+    Object.keys(nextMeta).forEach((key) => {
+        if (nextMeta[key] !== prevMeta[key]) {
+            changedFields[key] = nextMeta[key];
+        }
+    });
+
+    const photoChanged = data.photo !== (previousData ? previousData.photo : undefined);
+
+    if (Object.keys(changedFields).length === 0 && !photoChanged) {
+        return false;
     }
+
+    const batch = db.batch();
+
+    if (Object.keys(changedFields).length > 0) {
+        changedFields.updatedAt = new Date().toISOString();
+        batch.update(db.collection('members').doc(currentFirebaseKey), changedFields);
+    }
+    if (photoChanged) {
+        batch.set(db.collection('memberPhotos').doc(currentFirebaseKey), { photo: data.photo || null });
+    }
+
+    await batch.commit();
+    console.log('✅ Updated in Firestore, id:', currentFirebaseKey);
+    return true;
 }
 
 // --- Edit Card: go back to form with pre-filled data ---
@@ -947,7 +1001,7 @@ function editCard() {
     document.getElementById('dob').value = currentMemberData.dob || '';
     document.getElementById('gender').value = currentMemberData.gender || '';
     document.getElementById('aadhaarNo').value = currentMemberData.aadhaar;
-    document.getElementById('phoneNo').value = currentMemberData.phone;
+    document.getElementById('phoneNo').value = normalizeIndianPhone(currentMemberData.phone);
     document.getElementById('city').value = currentMemberData.city;
     document.getElementById('state').value = currentMemberData.state;
 
@@ -968,7 +1022,7 @@ function editCard() {
 
 // --- Compress image for Firebase storage ---
 function compressImage(dataURL, maxWidth, maxHeight, quality) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
         const img = new Image();
         img.onload = function () {
             const canvas = document.createElement('canvas');
@@ -987,9 +1041,14 @@ function compressImage(dataURL, maxWidth, maxHeight, quality) {
             canvas.width = w;
             canvas.height = h;
             const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, w, h);
             ctx.drawImage(img, 0, 0, w, h);
             resolve(canvas.toDataURL('image/jpeg', quality));
         };
+        img.onerror = () => reject(new Error('Image could not be loaded for compression'));
         img.src = dataURL;
     });
 }
@@ -1088,44 +1147,48 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (editId && document.getElementById('cardForm')) {
         try {
             showToast('Loading member data...', 'success');
-            const snap = await db.ref('members/' + editId).once('value');
-            if (snap.exists()) {
-                currentMemberData = snap.val();
+
+            const [snap, photoSnap] = await Promise.all([
+                db.collection('members').doc(editId).get(),
+                db.collection('memberPhotos').doc(editId).get()
+            ]);
+
+            if (snap.exists) {
+                currentMemberData = snap.data();
+                if (photoSnap.exists) currentMemberData.photo = photoSnap.data().photo;
+
+                originalMemberData = { ...currentMemberData };
                 currentFirebaseKey = editId;
                 isEditMode = true;
-                
+
                 document.getElementById('memberName').value = currentMemberData.name || '';
                 document.getElementById('fatherName').value = currentMemberData.fatherName || '';
                 document.getElementById('dob').value = currentMemberData.dob || '';
                 document.getElementById('gender').value = currentMemberData.gender || '';
                 document.getElementById('aadhaarNo').value = currentMemberData.aadhaar || '';
-                document.getElementById('phoneNo').value = currentMemberData.phone || '';
+                document.getElementById('phoneNo').value = normalizeIndianPhone(currentMemberData.phone || '');
                 document.getElementById('city').value = currentMemberData.city || '';
                 document.getElementById('state').value = currentMemberData.state || '';
-                
+
                 uploadedPhotoDataURL = currentMemberData.photo;
-                const photoPreview = document.getElementById('photoPreview');
-                const photoUploadArea = document.getElementById('photoUploadArea');
                 if (photoPreview && photoUploadArea && uploadedPhotoDataURL) {
-                   photoPreview.innerHTML = `<img src="${uploadedPhotoDataURL}" alt="Your Photo">`;
-                   photoUploadArea.style.borderColor = 'var(--green)';
+                    photoPreview.innerHTML = `<img src="${uploadedPhotoDataURL}" alt="Your Photo">`;
+                    photoUploadArea.style.borderColor = 'var(--green)';
                 }
-                
-                const btnGenerate = document.getElementById('btnGenerate');
+
                 if (btnGenerate) {
                     btnGenerate.innerHTML = '✏️ कार्ड अपडेट करें — Update Card';
                 }
-                
+
                 showToast('✏️ You are in Edit Mode. Update details below.', 'success');
-                
-                // Clear the URL to avoid accidentally re-triggering on manual refresh
                 window.history.replaceState({}, document.title, window.location.pathname);
             } else {
                 showToast('❌ Member not found!', 'error');
             }
-        } catch (e) { 
-            console.error(e); 
+        } catch (e) {
+            console.error(e);
             showToast('Error loading member data', 'error');
         }
     }
 });
+
