@@ -67,7 +67,7 @@ if (photoInput) {
             try {
                 // Store the already-compressed base64 image so new saves and later edits
                 // do not keep re-encoding the same photo.
-                uploadedPhotoDataURL = await compressImage(ev.target.result, 400, 480, 0.85);
+                uploadedPhotoDataURL = await compressImage(ev.target.result, 600, 720, 0.92);
                 photoPreview.innerHTML = `<img src="${uploadedPhotoDataURL}" alt="Your Photo">`;
                 photoUploadArea.style.borderColor = 'var(--green)';
             } catch (err) {
@@ -503,6 +503,8 @@ async function drawCardFront(canvas, data) {
     const ctx = canvas.getContext('2d');
     await document.fonts.ready;
     ctx.clearRect(0, 0, W, H);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
     const NAVY   = '#1a2d5a';
     const TEAL   = '#2eb8d0';
@@ -654,6 +656,8 @@ async function drawCardBack(canvas, data) {
     const ctx = canvas.getContext('2d');
     await document.fonts.ready;
     ctx.clearRect(0, 0, W, H);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
     const NAVY    = '#1a2d5a';
     const TEAL    = '#2eb8d0';
