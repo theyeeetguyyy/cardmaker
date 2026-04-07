@@ -42,31 +42,6 @@ if (aadhaarInput) {
     });
 }
 
-// --- Phone formatting ---
-function normalizeIndianPhone(value) {
-    const localDigits = getPhoneDigits(value);
-    return `+91 ${localDigits}`;
-}
-
-function attachIndianPhoneFormatter(input) {
-    if (!input) return;
-
-    input.addEventListener('focus', function () {
-        if (!this.value.trim()) {
-            this.value = '+91 ';
-        }
-    });
-
-    input.addEventListener('input', function () {
-        this.value = normalizeIndianPhone(this.value);
-    });
-}
-
-const phoneInput = document.getElementById('phoneNo');
-const findPhoneInput = document.getElementById('findPhone');
-attachIndianPhoneFormatter(phoneInput);
-attachIndianPhoneFormatter(findPhoneInput);
-
 // --- Photo Upload ---
 if (photoInput) {
     photoInput.addEventListener('change', async function (e) {
@@ -92,7 +67,7 @@ if (photoInput) {
             try {
                 // Store the already-compressed base64 image so new saves and later edits
                 // do not keep re-encoding the same photo.
-                uploadedPhotoDataURL = await compressImage(ev.target.result, 300, 360, 0.7);
+                uploadedPhotoDataURL = await compressImage(ev.target.result, 400, 480, 0.85);
                 photoPreview.innerHTML = `<img src="${uploadedPhotoDataURL}" alt="Your Photo">`;
                 photoUploadArea.style.borderColor = 'var(--green)';
             } catch (err) {
@@ -168,16 +143,14 @@ if (findModal) {
 async function submitFindCard(e) {
     e.preventDefault();
 
-    let phoneQuery = normalizeIndianPhone(document.getElementById('findPhone').value.trim());
-    document.getElementById('findPhone').value = phoneQuery;
-    const aadhaarQuery = document.getElementById('findAadhaar').value.trim();
-    const btn = document.getElementById('btnFindCardSearch');
-
-    const phoneDigits = getPhoneDigits(phoneQuery);
+    const phoneDigits = getPhoneDigits(document.getElementById('findPhone').value.trim());
     if (phoneDigits.length !== 10) {
-        showToast('फोन नंबर 10 अंकों का होना चाहिए! Phone number must be 10 digits after +91.', 'error');
+        showToast('फोन नंबर 10 अंकों का होना चाहिए! Phone must be 10 digits.', 'error');
         return;
     }
+
+    const aadhaarQuery = document.getElementById('findAadhaar').value.trim();
+    const btn = document.getElementById('btnFindCardSearch');
 
     const finalAadhaar = formatAadhaarInput(aadhaarQuery);
     if (finalAadhaar.replace(/\s/g, '').length !== 12) {
@@ -228,7 +201,7 @@ async function submitFindCard(e) {
         document.getElementById('dob').value = currentMemberData.dob || '';
         document.getElementById('gender').value = currentMemberData.gender || '';
         document.getElementById('aadhaarNo').value = currentMemberData.aadhaar || '';
-        document.getElementById('phoneNo').value = normalizeIndianPhone(currentMemberData.phone || '');
+        document.getElementById('phoneNo').value = currentMemberData.phone || '';
         document.getElementById('city').value = currentMemberData.city || '';
         document.getElementById('state').value = currentMemberData.state || '';
 
@@ -267,7 +240,7 @@ if (cardForm) {
     const dob = document.getElementById('dob').value;
     const gender = document.getElementById('gender').value;
     const aadhaarNo = formatAadhaarInput(document.getElementById('aadhaarNo').value.trim());
-    const phoneNo = normalizeIndianPhone(document.getElementById('phoneNo').value.trim());
+    const phoneNo = getPhoneDigits(document.getElementById('phoneNo').value.trim());
     const city = document.getElementById('city').value.trim();
     const state = document.getElementById('state').value;
 
@@ -278,8 +251,8 @@ if (cardForm) {
         return;
     }
 
-    if (getPhoneDigits(phoneNo).length !== 10) {
-        showToast('फोन नंबर 10 अंकों का होना चाहिए! Phone number must be 10 digits after +91.', 'error');
+    if (phoneNo.length !== 10) {
+        showToast('फोन नंबर 10 अंकों का होना चाहिए! Phone must be 10 digits.', 'error');
         return;
     }
 
@@ -655,7 +628,10 @@ async function drawCardFront(canvas, data) {
     let dobText = data.dob ? data.dob.split('-').reverse().join('/') : '';
     ctx.fillText(`DOB: ${dobText}   Gender: ${data.gender || ''}`, lx, ly); ly += 15.5*S;
     
-    ctx.fillText(data.phone || '', lx, ly); ly += 15.5*S;
+    const phoneDisplay = data.phone
+        ? `+91 ${data.phone.slice(0, 5)} ${data.phone.slice(5)}`
+        : '';
+    ctx.fillText(phoneDisplay, lx, ly); ly += 15.5*S;
     ctx.fillText(`Aadhaar: ${maskAadhaar(data.aadhaar || '')}`, lx, ly); ly += 15.5*S;
 
     ctx.font = `${10.5*S}px 'Segoe UI', Arial, sans-serif`;
@@ -1001,7 +977,7 @@ function editCard() {
     document.getElementById('dob').value = currentMemberData.dob || '';
     document.getElementById('gender').value = currentMemberData.gender || '';
     document.getElementById('aadhaarNo').value = currentMemberData.aadhaar;
-    document.getElementById('phoneNo').value = normalizeIndianPhone(currentMemberData.phone);
+    document.getElementById('phoneNo').value = currentMemberData.phone || '';
     document.getElementById('city').value = currentMemberData.city;
     document.getElementById('state').value = currentMemberData.state;
 

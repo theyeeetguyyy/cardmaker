@@ -4,34 +4,6 @@
 // Uses Firestore (members + memberPhotos collections)
 // ============================================
 
-
-
-// rules_version = '2';
-
-// service cloud.firestore {
-//   match /databases/{database}/documents {
-
-//     // This rule allows anyone with your Firestore database reference to view, edit,
-//     // and delete all data in your Firestore database. It is useful for getting
-//     // started, but it is configured to expire after 30 days because it
-//     // leaves your app open to attackers. At that time, all client
-//     // requests to your Firestore database will be denied.
-//     //
-//     // Make sure to write security rules for your app before that time, or else
-//     // all client requests to your Firestore database will be denied until you Update
-//     // your rules
-//     match /{document=**} {
-//       allow read, write: if request.time < timestamp.date(2030, 5, 8);
-//     }
-//   }
-// }
-
-
-
-
-
-
-
 const ADMIN_PASSWORD = 'admin123';
 
 let allMembers = [];
@@ -156,7 +128,7 @@ function renderTable(members) {
         <tr>
             <td>${i + 1}</td>
             <td>
-                <span style="color: var(--gray-500); font-size: 0.75rem;">📷 On demand</span>
+                <div onclick="viewMember('${m.id}')" title="Click View (👁️) to see photo" style="width:40px;height:48px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;">📷</div>
             </td>
             <td style="font-weight: 600; color: var(--white);">${escapeHtml(m.name || '—')}</td>
             <td>${escapeHtml(m.fatherName || '—')}</td>
