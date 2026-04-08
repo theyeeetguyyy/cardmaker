@@ -190,6 +190,19 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="errorModal">
+        <div class="modal-content" style="max-width: 420px; text-align: center;">
+            <button class="modal-close" onclick="closeErrorModal()">✕</button>
+            <h3 id="errorModalTitle" style="color: #ffb4a2; font-family: var(--font-hindi); margin-bottom: 16px;">त्रुटि / Error</h3>
+            <p id="errorModalMessage" style="color: var(--gray-200); font-size: 0.95rem; line-height: 1.6; margin-bottom: 24px;">
+                You haven't filled the Google form.
+            </p>
+            <button type="button" class="btn-generate" onclick="closeErrorModal()" style="width: 100%; padding: 12px;">
+                ठीक है / OK
+            </button>
+        </div>
+    </div>
+
     <!-- Hidden render areas for high-quality capture -->
     <div class="card-render-area" id="renderArea"></div>
 

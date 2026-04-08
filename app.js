@@ -10,6 +10,10 @@ let currentMemberData = null;
 let originalMemberData = null;
 let currentFirebaseKey = null; // Track the Firebase key for edits
 let isEditMode = false;
+let allowedPhoneNumbers = null;
+let allowedPhoneNumbersPromise = null;
+
+const DEFAULT_PHONE_ACCESS_ERROR = "You haven't filled the Google form.";
 
 // --- DOM Elements ---
 const cardForm = document.getElementById('cardForm');
@@ -19,6 +23,11 @@ const photoUploadArea = document.getElementById('photoUploadArea');
 const cardSection = document.getElementById('cardSection');
 const btnGenerate = document.getElementById('btnGenerate');
 const toastEl = document.getElementById('toast');
+
+function normalizeIndianPhone(value) {
+    const digits = getPhoneDigits(value);
+    return digits.length === 10 ? digits : '';
+}
 
 function formatAadhaarInput(value) {
     const digits = (value || '').replace(/\D/g, '').slice(0, 12);
@@ -32,6 +41,57 @@ function formatAadhaarInput(value) {
 
 function getPhoneDigits(value) {
     return (value || '').replace(/\D/g, '').slice(-10);
+}
+
+async function loadAllowedPhoneNumbers() {
+    if (allowedPhoneNumbers) return allowedPhoneNumbers;
+    if (allowedPhoneNumbersPromise) return allowedPhoneNumbersPromise;
+
+    allowedPhoneNumbersPromise = fetch(`numbers.csv?v=${Date.now()}`, { cache: 'no-store' })
+        .then(async (response) => {
+            if (!response.ok) {
+                throw new Error(`Failed to load numbers.csv (${response.status})`);
+            }
+
+            const csvText = await response.text();
+            const numbers = new Set();
+
+            csvText.split(/\r?\n/).forEach((line) => {
+                const value = getPhoneDigits(line);
+                if (value.length === 10) {
+                    numbers.add(value);
+                }
+            });
+
+            allowedPhoneNumbers = numbers;
+            return numbers;
+        })
+        .catch((error) => {
+            allowedPhoneNumbersPromise = null;
+            throw error;
+        });
+
+    return allowedPhoneNumbersPromise;
+}
+
+function openErrorModal(message = DEFAULT_PHONE_ACCESS_ERROR, title = 'त्रुटि / Error') {
+    const modal = document.getElementById('errorModal');
+    const titleEl = document.getElementById('errorModalTitle');
+    const messageEl = document.getElementById('errorModalMessage');
+
+    if (titleEl) titleEl.textContent = title;
+    if (messageEl) messageEl.textContent = message;
+    if (modal) modal.classList.add('visible');
+}
+
+function closeErrorModal() {
+    const modal = document.getElementById('errorModal');
+    if (modal) modal.classList.remove('visible');
+}
+
+async function ensurePhoneIsAllowed(phoneNo) {
+    const numbers = await loadAllowedPhoneNumbers();
+    return numbers.has(phoneNo);
 }
 
 // --- Aadhaar formatting ---
@@ -137,6 +197,13 @@ const findModal = document.getElementById('findModal');
 if (findModal) {
     findModal.addEventListener('click', function (e) {
         if (e.target === this) closeFindModal();
+    });
+}
+
+const errorModal = document.getElementById('errorModal');
+if (errorModal) {
+    errorModal.addEventListener('click', function (e) {
+        if (e.target === this) closeErrorModal();
     });
 }
 
@@ -258,6 +325,20 @@ if (cardForm) {
 
     document.getElementById('aadhaarNo').value = aadhaarNo;
     document.getElementById('phoneNo').value = phoneNo;
+
+    let isAllowedPhone = false;
+    try {
+        isAllowedPhone = await ensurePhoneIsAllowed(phoneNo);
+    } catch (err) {
+        console.error('Allowed phone list load failed:', err);
+        showToast('फोन सूची लोड नहीं हो पाई! Could not load the approved phone list.', 'error');
+        return;
+    }
+
+    if (!isAllowedPhone) {
+        openErrorModal(DEFAULT_PHONE_ACCESS_ERROR);
+        return;
+    }
 
     // Disable button
     btnGenerate.disabled = true;
@@ -1122,6 +1203,10 @@ function showToast(message, type = 'success') {
 
 // --- Check for Edit Mode via URL (from Admin Panel) ---
 document.addEventListener('DOMContentLoaded', async () => {
+    loadAllowedPhoneNumbers().catch((err) => {
+        console.error('Could not preload numbers.csv:', err);
+    });
+
     const urlParams = new URLSearchParams(window.location.search);
     const editId = urlParams.get('edit');
     if (editId && document.getElementById('cardForm')) {
@@ -1171,4 +1256,3 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 });
-
