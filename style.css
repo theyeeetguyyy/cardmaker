@@ -189,12 +189,14 @@ body {
 .page-footer {
     margin-top: 36px;
     padding: 0 0 16px;
+    text-align: center;
 }
 
 .footer-photo-strip {
     position: relative;
-    width: 100%;
-    min-height: 120px;
+    width: min(100%, 560px);
+    padding: 14px;
+    margin: 0 auto;
     border-radius: var(--radius-lg);
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.12);
@@ -210,13 +212,48 @@ body {
     pointer-events: none;
 }
 
+.footer-people-grid {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    align-items: center;
+}
+
+.footer-person {
+    height: 140px;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
+    background-image: url('context/people.jpeg');
+    background-repeat: no-repeat;
+    background-size: 420%;
+    background-position-y: 22%;
+}
+
+.footer-person-1 {
+    background-position-x: 2%;
+}
+
+.footer-person-2 {
+    background-position-x: 34%;
+}
+
+.footer-person-3 {
+    background-position-x: 67%;
+}
+
+.footer-person-4 {
+    background-position-x: 98%;
+}
+
 .footer-people-photo {
-    display: block;
+    display: none;
     width: 100%;
     height: 100%;
-    min-height: 120px;
     object-fit: cover;
-    object-position: center 28%;
+    object-position: center center;
 }
 
 .footer-caption {
@@ -1406,9 +1443,18 @@ body {
         align-items: center;
     }
 
-    .footer-photo-strip,
-    .footer-people-photo {
-        min-height: 130px;
+    .footer-photo-strip {
+        width: min(100%, 390px);
+        padding: 10px;
+    }
+
+    .footer-people-grid {
+        gap: 8px;
+    }
+
+    .footer-person {
+        height: 96px;
+        border-radius: 14px;
     }
 
     .btn-download {
@@ -1431,6 +1477,31 @@ body {
         transform: scale(0.65);
         transform-origin: top center;
         margin-bottom: -100px;
+    }
+
+    .footer-people-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .footer-person {
+        height: 110px;
+        background-size: 210%;
+    }
+
+    .footer-person-1 {
+        background-position: 8% 18%;
+    }
+
+    .footer-person-2 {
+        background-position: 92% 18%;
+    }
+
+    .footer-person-3 {
+        background-position: 8% 72%;
+    }
+
+    .footer-person-4 {
+        background-position: 92% 72%;
     }
 }
 
