@@ -13,7 +13,7 @@ let isEditMode = false;
 let allowedPhoneNumbers = null;
 let allowedPhoneNumbersPromise = null;
 
-const DEFAULT_PHONE_ACCESS_ERROR = "You haven't filled the Google form.";
+const DEFAULT_PHONE_ACCESS_ERROR = ```नमस्कार, प्रिय समाज बंधु, कृपया पहले अपना जनगणना फॉर्म भरें, उसके बाद अपना मतदान कार्ड प्राप्त करें। धन्यवाद 🙏```;
 
 // --- DOM Elements ---
 const cardForm = document.getElementById('cardForm');
