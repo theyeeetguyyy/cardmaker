@@ -103,6 +103,26 @@ if (aadhaarInput) {
 }
 
 // --- Photo Upload ---
+function openPhotoPicker() {
+    if (photoInput) {
+        photoInput.click();
+    }
+}
+
+if (photoUploadArea && photoInput) {
+    photoUploadArea.addEventListener('click', function (e) {
+        if (e.target === photoInput) return;
+        openPhotoPicker();
+    });
+
+    photoUploadArea.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openPhotoPicker();
+        }
+    });
+}
+
 if (photoInput) {
     photoInput.addEventListener('change', async function (e) {
         const file = e.target.files[0];
@@ -122,6 +142,9 @@ if (photoInput) {
             return;
         }
 
+        photoPreview.innerHTML = '<span class="placeholder-icon">⏳</span>';
+        photoUploadArea.style.borderColor = 'var(--saffron)';
+
         const reader = new FileReader();
         reader.onload = async function (ev) {
             try {
@@ -130,12 +153,24 @@ if (photoInput) {
                 uploadedPhotoDataURL = await compressImage(ev.target.result, 600, 720, 0.92);
                 photoPreview.innerHTML = `<img src="${uploadedPhotoDataURL}" alt="Your Photo">`;
                 photoUploadArea.style.borderColor = 'var(--green)';
+                showToast('✅ फोटो अपलोड हो गई! Photo uploaded successfully.', 'success');
             } catch (err) {
                 console.error('Photo compression error:', err);
+                uploadedPhotoDataURL = null;
+                photoPreview.innerHTML = '<span class="placeholder-icon">📷</span>';
+                photoUploadArea.style.borderColor = '';
                 showToast('फोटो प्रोसेस नहीं हो पाई! Could not process the photo.', 'error');
             } finally {
                 photoInput.value = '';
             }
+        };
+        reader.onerror = function () {
+            console.error('Photo read error');
+            uploadedPhotoDataURL = null;
+            photoPreview.innerHTML = '<span class="placeholder-icon">📷</span>';
+            photoUploadArea.style.borderColor = '';
+            photoInput.value = '';
+            showToast('फोटो पढ़ी नहीं जा सकी! Could not read the selected photo.', 'error');
         };
         reader.readAsDataURL(file);
     });
