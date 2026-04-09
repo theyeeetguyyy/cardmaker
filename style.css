@@ -393,8 +393,16 @@ body {
     font-size: 0.85rem;
 }
 
+/* FIX: display:none blocks file picker on iOS Safari.
+   Use visually-hidden technique so the input is accessible but invisible. */
 .photo-upload-area input[type="file"] {
-    display: none;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    overflow: hidden;
+    z-index: -1;
+    pointer-events: none;
 }
 
 /* ---- Generate Button ---- */
@@ -1408,116 +1416,221 @@ body {
 }
 
 
-/* ---- Responsive ---- */
+/* ════════════════════════════════
+   RESPONSIVE STYLES
+   ════════════════════════════════ */
+
+/* ---- Tablet (≤ 900px) ---- */
+@media (max-width: 900px) {
+    .admin-stats {
+        justify-content: center;
+    }
+    .stat-card {
+        min-width: 100px;
+        flex: 1;
+    }
+}
+
+/* ---- Mobile (≤ 768px) ---- */
 @media (max-width: 768px) {
+    .main-container {
+        padding: 12px;
+    }
+
+    /* Form */
     .form-grid {
         grid-template-columns: 1fr;
-    }
-
-    .hero h1 {
-        font-size: 1.4rem;
-    }
-
-    .card-flip-container {
-        gap: 20px;
-        transform: scale(0.85);
-        transform-origin: top center;
-        margin-bottom: -40px;
     }
 
     .glass-panel {
         padding: 20px;
     }
 
+    /* Form header row — title + find button */
+    #formSection > div:first-child {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .btn-find {
+        width: 100%;
+        text-align: center;
+        padding: 10px 16px;
+    }
+
+    /* Photo upload */
     .photo-upload-area {
         flex-direction: column;
         text-align: center;
     }
-
-    .admin-header {
-        flex-direction: column;
-        text-align: center;
+    .photo-preview {
+        align-self: center;
     }
 
+    /* Hero */
+    .hero h1 {
+        font-size: 1.4rem;
+    }
+    .hero h2 {
+        font-size: 0.85rem;
+        letter-spacing: 1px;
+    }
+
+    /* Canvas card — scale to fit screen */
+    .card-canvases {
+        gap: 16px;
+    }
+    #cardFront, #cardBack {
+        width: 100%;
+        max-width: 100%;
+        height: auto;
+    }
+
+    /* Download buttons */
     .download-buttons {
         flex-direction: column;
         align-items: center;
     }
-
-    .footer-photo-strip {
-        width: min(100%, 390px);
-        padding: 10px;
+    .btn-download {
+        width: 100%;
+        max-width: 320px;
+        justify-content: center;
     }
 
+    /* Admin header */
+    .admin-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    .admin-header > div:last-child {
+        justify-content: center;
+        width: 100%;
+    }
+    .btn-export, .btn-logout {
+        flex: 1;
+        min-width: 80px;
+        text-align: center;
+        padding: 10px 12px;
+        font-size: 0.8rem;
+    }
+
+    /* Admin stats */
+    .admin-stats {
+        gap: 10px;
+    }
+    .stat-card {
+        min-width: 80px;
+        padding: 12px 16px;
+        flex: 1;
+    }
+    .stat-card .stat-number {
+        font-size: 1.6rem;
+    }
+
+    /* Footer */
+    .footer-photo-strip {
+        width: 100%;
+        padding: 10px;
+    }
     .footer-people-grid {
         gap: 8px;
     }
-
     .footer-person {
         height: 96px;
         border-radius: 14px;
     }
 
-    .btn-download {
-        width: 100%;
-        max-width: 300px;
-        justify-content: center;
+    /* Toast — full width on mobile */
+    .toast {
+        bottom: 16px;
+        left: 12px;
+        right: 12px;
+        max-width: none;
+    }
+
+    /* Modal */
+    .modal-content {
+        padding: 20px;
+        margin: 10px;
+        max-height: 85vh;
     }
 }
 
+/* ---- Small mobile (≤ 520px) ---- */
 @media (max-width: 520px) {
     .main-container {
-        padding: 10px;
+        padding: 8px;
     }
 
     .hero {
-        padding: 30px 10px 20px;
+        padding: 24px 10px 16px;
+    }
+    .hero h1 {
+        font-size: 1.2rem;
+        margin-bottom: 6px;
+    }
+    .hero h2 {
+        font-size: 0.75rem;
+    }
+    .hero .subtitle {
+        font-size: 0.95rem;
+    }
+    .hero-logo {
+        width: 76px;
+        height: 76px;
     }
 
-    .hero h1 { font-size: 1.25rem; margin-bottom: 8px; }
-    .hero h2 { font-size: 0.8rem; }
-    .hero-logo { width: 80px; height: 80px; }
+    .glass-panel {
+        padding: 14px;
+    }
+    .glass-panel h3 {
+        font-size: 1.05rem;
+    }
 
-    .glass-panel { padding: 16px; }
-    .glass-panel h3 { font-size: 1.15rem; }
-    .btn-generate { padding: 12px; font-size: 1rem; }
+    .btn-generate {
+        padding: 13px;
+        font-size: 0.95rem;
+        letter-spacing: 1px;
+    }
 
-    .photo-upload-text h4 { font-size: 0.95rem; }
-    .photo-upload-text p { font-size: 0.75rem; }
-    .photo-preview { width: 80px; height: 96px; }
+    .photo-upload-text h4 { font-size: 0.9rem; }
+    .photo-upload-text p  { font-size: 0.75rem; }
+    .photo-preview {
+        width: 76px;
+        height: 92px;
+    }
 
-    .form-group label { font-size: 0.8rem; }
-    .form-group input, .form-group select { padding: 10px 14px; font-size: 0.95rem; }
+    .form-group label {
+        font-size: 0.78rem;
+    }
+    .form-group input,
+    .form-group select {
+        padding: 10px 12px;
+        font-size: 0.95rem;
+    }
 
-    .card-flip-container {
-        transform: scale(0.65);
-        transform-origin: top center;
-        margin-bottom: -100px;
+    /* Admin table — horizontal scroll with sticky first col */
+    .members-table th,
+    .members-table td {
+        padding: 8px 10px;
+        font-size: 0.78rem;
     }
 
     .footer-people-grid {
         grid-template-columns: repeat(2, 1fr);
     }
-
     .footer-person {
-        height: 110px;
+        height: 100px;
         background-size: 210%;
     }
+    .footer-person-1 { background-position: 8% 18%; }
+    .footer-person-2 { background-position: 92% 18%; }
+    .footer-person-3 { background-position: 8% 72%; }
+    .footer-person-4 { background-position: 92% 72%; }
 
-    .footer-person-1 {
-        background-position: 8% 18%;
-    }
-
-    .footer-person-2 {
-        background-position: 92% 18%;
-    }
-
-    .footer-person-3 {
-        background-position: 8% 72%;
-    }
-
-    .footer-person-4 {
-        background-position: 92% 72%;
+    /* Admin gate on very small screens */
+    .admin-gate {
+        margin: 40px auto;
     }
 }
 
