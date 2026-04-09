@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>सदस्यता कार्ड | अखिल भारतीय माहौर ग्वारे वैश्य महासभा</title>
     <meta name="description" content="अखिल भारतीय माहौर ग्वारे वैश्य महासभा (पंजीकृत) - सदस्यता कार्ड बनाएं। Akhil Bhartiya Mahour Gware Vaishya Mahasabha Membership Card Generator.">
-    <link rel="stylesheet" href="style.css?v=4.0">
+    <link rel="stylesheet" href="style.css?v=4.2">
     <style>
         .card-canvases { display:flex; flex-direction:column; align-items:center; gap:24px; margin:20px 0; width: 100%; overflow: hidden; }
         #cardFront, #cardBack  { max-width:100%; height:auto; border-radius:14px; box-shadow:0 8px 32px rgba(0,0,0,0.25); display:block; }
@@ -111,7 +111,7 @@
                     </div>
 
                     <!-- Photo Upload -->
-                    <div class="photo-upload-area" id="photoUploadArea" role="button" tabindex="0" aria-controls="photoInput" aria-label="Upload passport size photo">
+                    <label class="photo-upload-area" id="photoUploadArea" for="photoInput" aria-label="Upload passport size photo">
                         <div class="photo-preview" id="photoPreview">
                             <span class="placeholder-icon">📷</span>
                         </div>
@@ -120,7 +120,7 @@
                             <p>Upload Passport Size Photo — Click to browse (JPG, PNG, max 2MB)</p>
                         </div>
                         <input type="file" id="photoInput" accept="image/*">
-                    </div>
+                    </label>
                 </div>
 
                 <button type="submit" class="btn-generate" id="btnGenerate">
@@ -183,7 +183,7 @@
                 </div>
                 <div class="form-group" style="text-align: left; margin-bottom: 24px;">
                     <label for="findAadhaar">आधार नंबर / Aadhaar *</label>
-                    <input type="text" id="findAadhaar" placeholder="XXXX XXXX XXXX" required>
+                    <input type="text" id="findAadhaar" placeholder="XXXX XXXX XXXX" maxlength="14" required>
                 </div>
                 <button type="submit" class="btn-generate" id="btnFindCardSearch" style="width: 100%; padding: 12px;">खोजें — Search</button>
             </form>
@@ -210,6 +210,6 @@
     <div class="toast" id="toast"></div>
 
     <script src="firebase-config.js"></script>
-    <script src="app.js?v=6.0"></script>
+    <script src="app.js?v=6.2"></script>
 </body>
 </html>

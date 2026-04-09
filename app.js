@@ -89,6 +89,72 @@ function closeErrorModal() {
     if (modal) modal.classList.remove('visible');
 }
 
+
+function normalizeIndianPhone(value) {
+    const digits = getPhoneDigits(value);
+    return digits.length === 10 ? digits : '';
+}
+
+function formatAadhaarInput(value) {
+    const digits = (value || '').replace(/\D/g, '').slice(0, 12);
+    let formatted = '';
+    for (let i = 0; i < digits.length; i++) {
+        if (i > 0 && i % 4 === 0) formatted += ' ';
+        formatted += digits[i];
+    }
+    return formatted;
+}
+
+function getPhoneDigits(value) {
+    return (value || '').replace(/\D/g, '').slice(-10);
+}
+
+async function loadAllowedPhoneNumbers() {
+    if (allowedPhoneNumbers) return allowedPhoneNumbers;
+    if (allowedPhoneNumbersPromise) return allowedPhoneNumbersPromise;
+
+    allowedPhoneNumbersPromise = fetch(`numbers.csv?v=${Date.now()}`, { cache: 'no-store' })
+        .then(async (response) => {
+            if (!response.ok) {
+                throw new Error(`Failed to load numbers.csv (${response.status})`);
+            }
+
+            const csvText = await response.text();
+            const numbers = new Set();
+
+            csvText.split(/\r?\n/).forEach((line) => {
+                const value = getPhoneDigits(line);
+                if (value.length === 10) {
+                    numbers.add(value);
+                }
+            });
+
+            allowedPhoneNumbers = numbers;
+            return numbers;
+        })
+        .catch((error) => {
+            allowedPhoneNumbersPromise = null;
+            throw error;
+        });
+
+    return allowedPhoneNumbersPromise;
+}
+
+function openErrorModal(message = DEFAULT_PHONE_ACCESS_ERROR, title = 'त्रुटि / Error') {
+    const modal = document.getElementById('errorModal');
+    const titleEl = document.getElementById('errorModalTitle');
+    const messageEl = document.getElementById('errorModalMessage');
+
+    if (titleEl) titleEl.textContent = title;
+    if (messageEl) messageEl.textContent = message;
+    if (modal) modal.classList.add('visible');
+}
+
+function closeErrorModal() {
+    const modal = document.getElementById('errorModal');
+    if (modal) modal.classList.remove('visible');
+}
+
 async function ensurePhoneIsAllowed(phoneNo) {
     const numbers = await loadAllowedPhoneNumbers();
     return numbers.has(phoneNo);
@@ -101,27 +167,26 @@ if (aadhaarInput) {
         this.value = formatAadhaarInput(this.value);
     });
 }
+const findAadhaarInput = document.getElementById('findAadhaar');
+if (findAadhaarInput) {
+    findAadhaarInput.addEventListener('input', function () {
+        this.value = formatAadhaarInput(this.value);
+    });
+}
+const findPhoneInput = document.getElementById('findPhone');
+if (findPhoneInput) {
+    findPhoneInput.addEventListener('input', function () {
+        this.value = this.value.replace(/\D/g, '').slice(0, 10);
+    });
+}
+const phoneNoInput = document.getElementById('phoneNo');
+if (phoneNoInput) {
+    phoneNoInput.addEventListener('input', function () {
+        this.value = this.value.replace(/\D/g, '').slice(0, 10);
+    });
+}
 
 // --- Photo Upload ---
-function openPhotoPicker() {
-    if (photoInput) {
-        photoInput.click();
-    }
-}
-
-if (photoUploadArea && photoInput) {
-    photoUploadArea.addEventListener('click', function (e) {
-        if (e.target === photoInput) return;
-        openPhotoPicker();
-    });
-
-    photoUploadArea.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            openPhotoPicker();
-        }
-    });
-}
 
 if (photoInput) {
     photoInput.addEventListener('change', async function (e) {
@@ -216,12 +281,10 @@ async function checkDuplicate(aadhaarNo, phoneNo, previousData = null) {
 // --- Find Card Logic ---
 function openFindModal() {
     document.getElementById('findModal').classList.add('visible');
-    document.getElementById('findPhone').value = '+91 ';
+    document.getElementById('findPhone').value = '';
     document.getElementById('findAadhaar').value = '';
     document.getElementById('findPhone').focus();
 }
-
-
 
 function closeFindModal() {
     document.getElementById('findModal').classList.remove('visible');
