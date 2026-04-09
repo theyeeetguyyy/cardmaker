@@ -215,10 +215,17 @@ body {
 .footer-people-grid {
     position: relative;
     z-index: 1;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
+    display: flex;
+    justify-content: center;
     align-items: center;
+    width: 100%;
+}
+
+.footer-people-grid img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    display: block;
 }
 
 .footer-person {
