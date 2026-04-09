@@ -3,7 +3,7 @@
 // अखिल भारतीय माहौर ग्वारे वैश्य महासभा
 // ============================================
 
-const ADMIN_PASSWORD = 'admin123';
+const ADMIN_PASSWORD = 'Matdan@1984';
 
 let allMembers = [];
 // toastEl and showToast are already defined in app.js (loaded before this file)
