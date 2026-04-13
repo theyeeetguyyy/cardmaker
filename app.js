@@ -217,7 +217,8 @@ function attachPhotoUpload() {
 
 // ─── Duplicate Check ─────────────────────────────────────────
 
-async function checkDuplicate(aadhaarNo, phoneNo, previousData = null) {
+// Returns: null | 'aadhaar' | 'phone_same_gender' | 'phone_both_genders'
+async function checkDuplicate(aadhaarNo, phoneNo, currentGender, previousData = null) {
     try {
         const shouldCheckAadhaar = !previousData || (previousData.aadhaar || '') !== aadhaarNo;
         const shouldCheckPhone   = !previousData || getPhoneDigits(previousData.phone) !== getPhoneDigits(phoneNo);
@@ -236,10 +237,24 @@ async function checkDuplicate(aadhaarNo, phoneNo, previousData = null) {
         if (shouldCheckPhone) {
             const snap = await db.collection('members').where('phone', '==', phoneNo).get();
             if (!snap.empty) {
-                if (isEditMode && currentFirebaseKey) {
-                    if (snap.docs.filter(d => d.id !== currentFirebaseKey).length > 0) return 'phone';
+                // Filter out the current card if editing
+                const otherDocs = isEditMode && currentFirebaseKey
+                    ? snap.docs.filter(d => d.id !== currentFirebaseKey)
+                    : snap.docs;
+
+                if (otherDocs.length === 0) {
+                    // No other cards with this phone — allow
+                } else if (otherDocs.length >= 2) {
+                    // Both male and female cards already exist
+                    return 'phone_both_genders';
                 } else {
-                    return 'phone';
+                    // Exactly 1 other card exists — check gender clash
+                    const existingGender = (otherDocs[0].data().gender || '').toLowerCase();
+                    const incomingGender = (currentGender || '').toLowerCase();
+                    if (existingGender === incomingGender) {
+                        return 'phone_same_gender';
+                    }
+                    // Different gender — allow the second card
                 }
             }
         }
@@ -407,13 +422,18 @@ function attachFormSubmit() {
         try {
             const previousData = isEditMode && originalMemberData ? { ...originalMemberData } : null;
 
-            const duplicate = await checkDuplicate(aadhaarNo, phoneNo, previousData);
+            const duplicate = await checkDuplicate(aadhaarNo, phoneNo, gender, previousData);
             if (duplicate === 'aadhaar') {
                 showToast('❌ इस आधार नंबर से पहले ही कार्ड बन चुका है!', 'error');
                 return;
             }
-            if (duplicate === 'phone') {
-                showToast('❌ इस फोन नंबर से पहले ही कार्ड बन चुका है!', 'error');
+            if (duplicate === 'phone_same_gender') {
+                const genderHindi = gender === 'Male' ? 'पुरुष (Male)' : 'महिला (Female)';
+                showToast(`❌ इस फोन नंबर से ${genderHindi} का कार्ड पहले ही बन चुका है!`, 'error');
+                return;
+            }
+            if (duplicate === 'phone_both_genders') {
+                showToast('❌ इस फोन नंबर से पुरुष और महिला दोनों के कार्ड पहले ही बन चुके हैं! Both Male & Female cards already exist for this phone number.', 'error');
                 return;
             }
 
