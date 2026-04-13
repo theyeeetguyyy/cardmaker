@@ -723,7 +723,7 @@ async function drawCardFront(canvas, data) {
 
     ctx.fillStyle = WHITE;
     ctx.font = `bold ${17*S}px 'Nirmala UI', 'Arial Unicode MS', sans-serif`;
-    ctx.fillText('अखिल भारतीय माहौर ग्वारे वैश्य महासभा®', W/2, 38*S);
+    ctx.fillText('अखिल भारतीय माहौर ग्वार्रे  वैश्य महासभा®', W/2, 38*S);
 
     ctx.fillStyle = 'rgba(255,255,255,0.75)';
     ctx.font = `${9*S}px 'Segoe UI', Arial, sans-serif`;
@@ -862,7 +862,7 @@ async function drawCardBack(canvas, data) {
 
     ctx.fillStyle = WHITE;
     ctx.font = `bold ${16*S}px 'Nirmala UI', 'Arial Unicode MS', sans-serif`;
-    ctx.fillText('अखिल भारतीय माहौर ग्वारे वैश्य महासभा®', W/2, 35*S);
+    ctx.fillText('अखिल भारतीय माहौर ग्वार्रे वैश्य महासभा®', W/2, 35*S);
 
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
     ctx.font = `${8.5*S}px 'Segoe UI', Arial, sans-serif`;
