@@ -587,6 +587,18 @@ function getTarazuImg() {
     });
 }
 
+let _kuldeviImg = null;
+function getKuldeviImg() {
+    if (_kuldeviImg) return Promise.resolve(_kuldeviImg);
+    return new Promise(resolve => {
+        const img = new Image();
+        img.onload  = () => { _kuldeviImg = img; resolve(img); };
+        img.onerror = () => resolve(null);
+        img.crossOrigin = 'anonymous';
+        img.src = 'assets/khuldevi.jpg.jpeg';
+    });
+}
+
 // ─── Canvas helpers ───────────────────────────────────────────
 
 function getMemberMeta(data) {
@@ -834,10 +846,10 @@ async function drawCardBack(canvas, data) {
         ctx.beginPath(); ctx.arc(36*S, 32*S, 22*S, 0, Math.PI * 2);
         ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1.5*S; ctx.stroke();
 
-        const tarazuLogo = await getTarazuImg();
-        if (tarazuLogo) {
+        const kuldeviLogo = await getKuldeviImg();
+        if (kuldeviLogo) {
             ctx.save(); ctx.beginPath(); ctx.arc((500-36)*S, 32*S, 22*S, 0, Math.PI * 2); ctx.clip();
-            ctx.drawImage(tarazuLogo, (500-58)*S, 10*S, 44*S, 44*S); ctx.restore();
+            ctx.drawImage(kuldeviLogo, (500-58)*S, 10*S, 44*S, 44*S); ctx.restore();
             ctx.beginPath(); ctx.arc((500-36)*S, 32*S, 22*S, 0, Math.PI * 2);
             ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1.5*S; ctx.stroke();
         }
@@ -945,7 +957,7 @@ async function drawCardBack(canvas, data) {
     }
     ctx.fillStyle = NAVY;
     ctx.font = `bold ${7.5*S}px 'Nirmala UI', 'Arial Unicode MS', sans-serif`;
-    ctx.fillText('सुरेश चन्द्र गुप्ता', sig3X + sigW/2, sigY + 62*S);
+    ctx.fillText('सुरेश चंद गुप्ता', sig3X + sigW/2, sigY + 62*S);
     ctx.fillStyle = '#555';
     ctx.font = `${6.5*S}px 'Segoe UI', Arial, sans-serif`;
     ctx.fillText('(National Secretary)', sig3X + sigW/2, sigY + 72*S);
