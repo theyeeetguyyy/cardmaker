@@ -804,7 +804,8 @@ async function drawCardFront(canvas, data) {
 
     ctx.fillStyle = '#333';
     ctx.font = `${10.5*S}px 'Segoe UI', Arial, sans-serif`;
-    ctx.fillText(`S/o. Shri ${data.fatherName || ''}`, lx, ly); ly += 15.5*S;
+    const relationPrefix = (data.gender || '').toLowerCase() === 'female' ? 'W/o. Shri' : 'S/o. Shri';
+    ctx.fillText(`${relationPrefix} ${data.fatherName || ''}`, lx, ly); ly += 15.5*S;
 
     let dobText = data.dob ? data.dob.split('-').reverse().join('/') : '';
     ctx.fillText(`DOB: ${dobText}   Gender: ${data.gender || ''}`, lx, ly); ly += 15.5*S;
@@ -841,7 +842,7 @@ async function drawCardBack(canvas, data) {
     const WHITE  = '#ffffff';
     const MAROON = '#7a2200';
     const HDR_H  = 64*S;
-    const FTR_H  = 36*S;
+    const FTR_H  = 44*S;
     const RADIUS = 14*S;
 
     rr(ctx, 0, 0, W, H, RADIUS);
@@ -872,6 +873,12 @@ async function drawCardBack(canvas, data) {
             ctx.drawImage(kuldeviLogo, (500-58)*S, 10*S, 44*S, 44*S); ctx.restore();
             ctx.beginPath(); ctx.arc((500-36)*S, 32*S, 22*S, 0, Math.PI * 2);
             ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1.5*S; ctx.stroke();
+
+            // "जय माँ चन्द्रावली कुलदेवी" text below the kuldevi photo
+            ctx.textAlign = 'center';
+            ctx.fillStyle = 'rgba(255,220,100,0.85)';
+            ctx.font = `bold ${5.5*S}px 'Nirmala UI', 'Arial Unicode MS', sans-serif`;
+            ctx.fillText('जय माँ चन्द्रावली कुलदेवी', (500-36)*S, 58*S);
         }
     }
 
@@ -998,14 +1005,21 @@ async function drawCardBack(canvas, data) {
     ctx.fillText('The use of this card is governed by the terms and conditions of A.B.M.G.V.M registered legislation.', 250*S, instY + 22*S);
     ctx.fillText('If found, please return to the office address mentioned above.', 250*S, instY + 32*S);
 
+    // Footer — two rows inside teal band
     ctx.fillStyle = WHITE;
-    ctx.font = `bold ${9*S}px 'Segoe UI', Arial, sans-serif`;
+    ctx.font = `bold ${8*S}px 'Segoe UI', Arial, sans-serif`;
+    // Row 1 — phone numbers
     ctx.textAlign = 'left';
-    ctx.fillText('📞 President : 9826654877', 18*S, H - 11*S);
+    ctx.fillText('📞 President : 9826654877', 18*S, H - 21*S);
     ctx.textAlign = 'center';
-    ctx.fillText('📞 Reg. Office : 6261507117', 250*S, H - 11*S);
+    ctx.fillText('📞 Reg. Office : 6261507117', 250*S, H - 21*S);
     ctx.textAlign = 'right';
-    ctx.fillText('📞 Secretary : 9893167002', (500-18)*S, H - 11*S);
+    ctx.fillText('📞 Secretary : 9893167002', (500-18)*S, H - 21*S);
+    // Row 2 — email
+    ctx.fillStyle = 'rgba(255,255,255,0.88)';
+    ctx.font = `${7*S}px 'Segoe UI', Arial, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText('✉ akhilbhartiyamahaurmahasabha@gmail.com', 250*S, H - 8*S);
 }
 
 async function populateCard(data) {
