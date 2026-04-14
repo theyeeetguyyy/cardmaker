@@ -878,7 +878,7 @@ async function drawCardBack(canvas, data) {
             ctx.textAlign = 'center';
             ctx.fillStyle = 'rgba(255,220,100,0.85)';
             ctx.font = `bold ${5.5*S}px 'Nirmala UI', 'Arial Unicode MS', sans-serif`;
-            ctx.fillText('जय माँ चन्द्रावली कुलदेवी', (500-36)*S, 58*S);
+            ctx.fillText('जय माँ चन्द्रावली कुलदेवी', (500-36)*S, 66*S);
         }
     }
 
