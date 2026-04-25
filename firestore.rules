@@ -38,8 +38,21 @@ service cloud.firestore {
         && request.resource.data.keys().size() <= 12
         && request.resource.size() <= 5000;
 
-      // Only admins can update existing members
-      allow update: if isAdmin();
+      // Admins can update freely; public users can update with validation
+      // (needed for "Find Card → Edit → Update" flow on index.html)
+      allow update: if
+        isAdmin()
+        || (
+          request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.phone is string
+          && request.resource.data.phone.size() == 10
+          && request.resource.data.aadhaar is string
+          && request.resource.data.aadhaar.size() == 14
+          && request.resource.data.gender in ['Male', 'Female', 'Other']
+          && request.resource.data.keys().size() <= 13
+          && request.resource.size() <= 5000
+        );
 
       // Only admins can delete members
       allow delete: if isAdmin();
@@ -55,8 +68,13 @@ service cloud.firestore {
         request.resource.data.keys().hasOnly(['photo'])
         && request.resource.size() <= 50000;
 
-      // Only admins can update or delete photos
-      allow update: if isAdmin();
+      // Admins can update freely; public users can update with validation
+      allow update: if
+        isAdmin()
+        || (
+          request.resource.data.keys().hasOnly(['photo'])
+          && request.resource.size() <= 50000
+        );
       allow delete: if isAdmin();
     }
 
