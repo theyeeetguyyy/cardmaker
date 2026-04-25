@@ -2,22 +2,83 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Public members metadata — anyone can read (needed for "Find Card" search)
-    // Write is open since there is no auth; rely on client-side validation
+    // ─── Admin check ────────────────────────────────────────
+    // Add more admin emails here to grant access
+    function isAdmin() {
+      return request.auth != null
+          && request.auth.token.email_verified == true
+          && request.auth.token.email in [
+               'astitvabandil@gmail.com'
+             ];
+    }
+
+    // ─── Members metadata ───────────────────────────────────
+    // Anyone can read (needed for "Find Card" search)
+    // Anyone can create (needed for public card generation)
+    // Only admins can update or delete
     match /members/{id} {
       allow read: if true;
-      allow write: if true;
+
+      // Allow create with required fields and correct types
+      allow create: if
+        request.resource.data.keys().hasAll([
+          'name', 'fatherName', 'dob', 'gender', 'aadhaar',
+          'phone', 'city', 'state', 'membershipNo', 'issuingDate', 'createdAt'
+        ])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 100
+        && request.resource.data.fatherName is string
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() == 10
+        && request.resource.data.aadhaar is string
+        && request.resource.data.aadhaar.size() == 14
+        && request.resource.data.gender in ['Male', 'Female', 'Other']
+        && request.resource.data.membershipNo is string
+        && request.resource.data.keys().size() <= 12
+        && request.resource.size() <= 5000;
+
+      // Only admins can update existing members
+      allow update: if isAdmin();
+
+      // Only admins can delete members
+      allow delete: if isAdmin();
     }
 
-    // Photos stored separately so metadata queries never pull photo bytes
+    // ─── Member Photos ──────────────────────────────────────
+    // Stored separately so list queries never pull base64 photo bytes
     match /memberPhotos/{id} {
       allow read: if true;
-      allow write: if true;
+
+      // Anyone can create (part of public card generation)
+      allow create: if
+        request.resource.data.keys().hasOnly(['photo'])
+        && request.resource.size() <= 50000;
+
+      // Only admins can update or delete photos
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
-    // Atomic membership counter
+    // ─── Atomic membership counter ──────────────────────────
     match /meta/{doc} {
-      allow read, write: if true;
+      allow read: if true;
+
+      // Anyone can increment counter by 1 (needed for card generation)
+      // Admin can do any write (reset counter etc.)
+      allow write: if
+        isAdmin()
+        || (
+          doc == 'counter'
+          && request.resource.data.keys().hasOnly(['value'])
+          && request.resource.data.value is int
+          && request.resource.data.value == resource.data.value + 1
+        );
+    }
+
+    // ─── Deny everything else ───────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

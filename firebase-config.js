@@ -21,3 +21,5 @@ firebase.initializeApp(firebaseConfig);
 //   memberPhotos/{id} — { photo: base64 }  (fetched on demand only)
 //   meta/counter      — { value: number }  (atomic membership counter)
 const db = firebase.firestore();
+// Auth is only available on admin.html (which loads firebase-auth-compat.js)
+const auth = typeof firebase.auth === 'function' ? firebase.auth() : null;

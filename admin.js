@@ -3,46 +3,96 @@
 // अखिल भारतीय माहौर ग्वारे वैश्य महासभा
 // ============================================
 
-const ADMIN_PASSWORD = 'Matdan@1984';
+// ─── Admin Email Whitelist ───────────────────────────────────
+// Add more admin emails to this array to grant access
+const ADMIN_EMAILS = [
+    'astitvabandil@gmail.com'
+];
 
 let allMembers = [];
+let lastVisibleDoc = null;
+let isLoadingMore = false;
 // toastEl and showToast are already defined in app.js (loaded before this file)
 
-// --- Enter key on password field ---
-document.getElementById('adminPassword').addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') attemptLogin();
+// ─── Firebase Google Auth ────────────────────────────────────
+
+const googleProvider = new firebase.auth.GoogleAuthProvider();
+
+function isAdminEmail(email) {
+    return ADMIN_EMAILS.includes((email || '').toLowerCase());
+}
+
+// Listen for auth state changes (handles page reload, session restore)
+auth.onAuthStateChanged(function (user) {
+    const gate       = document.getElementById('adminGate');
+    const dashboard  = document.getElementById('adminDashboard');
+    const loadingEl  = document.getElementById('authLoading');
+    const errorEl    = document.getElementById('loginError');
+    const signInBtn  = document.getElementById('btnGoogleSignIn');
+
+    if (user && isAdminEmail(user.email)) {
+        // Authenticated admin — show dashboard
+        if (errorEl) errorEl.style.display = 'none';
+        if (loadingEl) loadingEl.style.display = 'none';
+        showDashboard();
+    } else if (user && !isAdminEmail(user.email)) {
+        // Signed in but NOT an admin — sign them out and show error
+        auth.signOut();
+        if (gate) gate.style.display = 'block';
+        if (dashboard) dashboard.classList.remove('visible');
+        if (errorEl) errorEl.style.display = 'block';
+        if (signInBtn) signInBtn.style.display = '';
+        if (loadingEl) loadingEl.style.display = 'none';
+    } else {
+        // Not signed in — show login gate
+        if (gate) gate.style.display = 'block';
+        if (dashboard) dashboard.classList.remove('visible');
+        if (errorEl) errorEl.style.display = 'none';
+        if (signInBtn) signInBtn.style.display = '';
+        if (loadingEl) loadingEl.style.display = 'none';
+    }
 });
 
-// --- Auto-restore session ---
-(function checkSession() {
-    if (sessionStorage.getItem('abmgvm_admin') === 'true') {
-        showDashboard();
-    }
-})();
+async function signInWithGoogle() {
+    const errorEl   = document.getElementById('loginError');
+    const loadingEl = document.getElementById('authLoading');
+    const signInBtn = document.getElementById('btnGoogleSignIn');
 
-// --- Login ---
-function attemptLogin() {
-    const pwd     = document.getElementById('adminPassword').value;
-    const errorEl = document.getElementById('loginError');
+    try {
+        if (errorEl) errorEl.style.display = 'none';
+        if (signInBtn) signInBtn.style.display = 'none';
+        if (loadingEl) loadingEl.style.display = 'block';
 
-    if (pwd === ADMIN_PASSWORD) {
-        sessionStorage.setItem('abmgvm_admin', 'true');
-        errorEl.style.display = 'none';
-        showDashboard();
-    } else {
-        errorEl.style.display = 'block';
-        document.getElementById('adminPassword').value = '';
-        document.getElementById('adminPassword').focus();
+        await auth.signInWithPopup(googleProvider);
+        // onAuthStateChanged will handle the rest
+    } catch (err) {
+        console.error('Google Sign-In error:', err);
+        if (signInBtn) signInBtn.style.display = '';
+        if (loadingEl) loadingEl.style.display = 'none';
+
+        if (err.code === 'auth/popup-closed-by-user') {
+            // User closed the popup, do nothing
+        } else if (err.code === 'auth/cancelled-popup-request') {
+            // Multiple popups, ignore
+        } else {
+            if (errorEl) {
+                errorEl.textContent = `❌ Login failed: ${err.message}`;
+                errorEl.style.display = 'block';
+            }
+        }
     }
 }
 
 // --- Logout ---
-function logout() {
-    sessionStorage.removeItem('abmgvm_admin');
+async function logout() {
+    try {
+        await auth.signOut();
+    } catch (e) {
+        console.error('Sign out error:', e);
+    }
     allMembers = [];
     document.getElementById('adminDashboard').classList.remove('visible');
     document.getElementById('adminGate').style.display = 'block';
-    document.getElementById('adminPassword').value = '';
 }
 
 // --- Show Dashboard ---
@@ -51,16 +101,35 @@ async function showDashboard() {
     document.getElementById('adminDashboard').classList.add('visible');
 
     if (allMembers.length > 0) {
-        updateStats();
-        filterMembers();
+        renderTable(allMembers);
         return;
     }
+    loadServerStats(); // Run in parallel
     await loadMembers();
+}
+
+// --- Load Server Stats ---
+async function loadServerStats() {
+    try {
+        const totalSnap = await db.collection('members').count().get();
+        document.getElementById('statTotal').textContent = totalSnap.data().count;
+
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const todaySnap = await db.collection('members').where('createdAt', '>=', today.toISOString()).count().get();
+        document.getElementById('statToday').textContent = todaySnap.data().count;
+
+        // Distinct states check is too expensive for 50k users (requires 50k reads)
+        document.getElementById('statStates').textContent = '—';
+    } catch (e) {
+        console.warn('Error fetching server stats:', e);
+    }
 }
 
 // --- Refresh ---
 async function refreshMembers() {
     allMembers = [];
+    lastVisibleDoc = null;
     const btn = document.getElementById('btnRefresh');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span>';
@@ -73,10 +142,16 @@ async function refreshMembers() {
 // --- Load Members (metadata only, no photos) ---
 async function loadMembers() {
     try {
-        const snapshot = await db.collection('members').orderBy('createdAt', 'desc').get();
+        const snapshot = await db.collection('members').orderBy('createdAt', 'desc').limit(100).get();
+        if(!snapshot.empty) {
+            lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1];
+        }
         allMembers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        updateStats();
         renderTable(allMembers);
+
+        // Hide load more button if less than 100
+        const loadMoreBtn = document.getElementById('btnLoadMore');
+        if (loadMoreBtn) loadMoreBtn.style.display = snapshot.docs.length < 100 ? 'none' : 'block';
     } catch (err) {
         console.error('Error loading members:', err);
         document.getElementById('membersTableBody').innerHTML = `
@@ -89,21 +164,39 @@ async function loadMembers() {
     }
 }
 
+// --- Load More Members ---
+async function loadMoreMembers() {
+    if (isLoadingMore || !lastVisibleDoc) return;
+    isLoadingMore = true;
+    const btn = document.getElementById('btnLoadMore');
+    if (btn) btn.innerHTML = '<span class="spinner"></span> Loading...';
+
+    try {
+        const snapshot = await db.collection('members').orderBy('createdAt', 'desc').startAfter(lastVisibleDoc).limit(100).get();
+        if(!snapshot.empty) {
+            lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1];
+            const newMembers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            allMembers = [...allMembers, ...newMembers];
+            renderTable(allMembers);
+        }
+        
+        if (btn) {
+            btn.innerHTML = '🔽 Load More Members';
+            btn.style.display = snapshot.docs.length < 100 ? 'none' : 'block';
+        }
+    } catch (err) {
+        console.error('Error loading more members:', err);
+        showToast('Error loading more members.', 'error');
+        if (btn) btn.innerHTML = '🔽 Load More Members';
+    } finally {
+        isLoadingMore = false;
+    }
+}
+
 // --- Stats ---
+// Disabled client side calculation to rely on loadServerStats
 function updateStats() {
-    document.getElementById('statTotal').textContent = allMembers.length;
-
-    const today = new Date().toDateString();
-    let todayCount = 0;
-    const stateSet = new Set();
-
-    allMembers.forEach(m => {
-        if (m.createdAt && new Date(m.createdAt).toDateString() === today) todayCount++;
-        if (m.state) stateSet.add(m.state);
-    });
-
-    document.getElementById('statToday').textContent  = todayCount;
-    document.getElementById('statStates').textContent = stateSet.size;
+    loadServerStats();
 }
 
 // --- Render Table ---
@@ -124,7 +217,7 @@ function renderTable(members) {
         <tr>
             <td>${i + 1}</td>
             <td>
-                <div onclick="viewMember('${m.id}')"
+                <div onclick="viewMember('${escapeHtml(m.id)}')"
                      title="Click to view photo"
                      style="width:40px;height:48px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);
                             border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;">
@@ -143,15 +236,15 @@ function renderTable(members) {
             <td>${escapeHtml(m.issuingDate || '—')}</td>
             <td style="display:flex;gap:8px;flex-wrap:wrap;">
                 <button class="btn-view"
-                        onclick="viewMember('${m.id}')"
+                        onclick="viewMember('${escapeHtml(m.id)}')"
                         title="View">👁️</button>
                 <button class="btn-view"
                         style="background:rgba(255,153,51,0.2);color:var(--saffron);border-color:rgba(255,153,51,0.4);"
-                        onclick="editMember('${m.id}')"
+                        onclick="editMember('${escapeHtml(m.id)}')"
                         title="Edit">✏️</button>
                 <button class="btn-view"
                         style="background:rgba(239,68,68,0.2);color:#ef4444;border-color:rgba(239,68,68,0.4);"
-                        onclick="deleteMember('${m.id}')"
+                        onclick="deleteMember('${escapeHtml(m.id)}')"
                         title="Delete">🗑️</button>
             </td>
         </tr>
@@ -191,12 +284,70 @@ function filterMembers() {
         (m.phone       && m.phone.includes(query))                      ||
         (m.city        && m.city.toLowerCase().includes(query))         ||
         (m.state       && m.state.toLowerCase().includes(query))        ||
-        (m.membershipNo && m.membershipNo.includes(query))              ||
+        (m.membershipNo && m.membershipNo.toLowerCase().includes(query)) ||
         (m.fatherName  && m.fatherName.toLowerCase().includes(query))   ||
         (m.dob         && m.dob.includes(query))                        ||
         (m.gender      && m.gender.toLowerCase().includes(query))       ||
         (m.aadhaar     && m.aadhaar.includes(query))
     ));
+}
+
+// --- Server DB Search ---
+async function searchDatabase() {
+    const q = document.getElementById('serverSearchInput').value.trim();
+    if (!q) {
+        showToast('Please enter a phone, aadhaar, or member No to search.', 'error');
+        return;
+    }
+    
+    const digits = q.replace(/\D/g, '');
+    let snapshot;
+    const btn = document.getElementById('btnSearchDB');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner"></span>';
+    btn.disabled = true;
+
+    try {
+        if (digits.length === 10) {
+            // Search by Phone
+            snapshot = await db.collection('members').where('phone', '==', digits).get();
+        } else if (digits.length === 12) {
+            // Format Aadhaar exactly how it's stored
+            let formattedAadhaar = '';
+            for (let i = 0; i < digits.length; i++) {
+                if (i > 0 && i % 4 === 0) formattedAadhaar += ' ';
+                formattedAadhaar += digits[i];
+            }
+            snapshot = await db.collection('members').where('aadhaar', '==', formattedAadhaar).get();
+        } else if (/^(JM|S\/)/i.test(q)) {
+            // Search by Member No — supports both JM prefix and legacy S/ prefix
+            snapshot = await db.collection('members').where('membershipNo', '==', q.toUpperCase()).get();
+        } else {
+            showToast('Enter a valid 10-digit phone, 12-digit Aadhaar, or Member No (JM...).', 'error');
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            return;
+        }
+
+        if (snapshot.empty) {
+            showToast('❌ No matching record found in the database.', 'error');
+        } else {
+            allMembers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderTable(allMembers);
+            
+            // Hide the load more button since we're displaying isolated search results
+            const loadMoreBtn = document.getElementById('btnLoadMore');
+            if (loadMoreBtn) loadMoreBtn.style.display = 'none';
+            
+            showToast('✅ Record found!', 'success');
+        }
+    } catch (e) {
+        console.error(e);
+        showToast('Error searching database.', 'error');
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
 }
 
 // --- View Member Details ---
@@ -218,6 +369,9 @@ async function viewMember(memberId) {
         console.warn('Could not load photo:', e);
     }
 
+    // Sanitize photo: only allow data: URLs (base64) — block any other scheme
+    const safePhoto = (photo && typeof photo === 'string' && photo.startsWith('data:image/')) ? photo : null;
+
     modalBody.innerHTML = `
         <div style="text-align:center;margin-bottom:20px;">
             <h3 style="color:var(--saffron);font-family:var(--font-hindi);font-size:1.3rem;">
@@ -229,8 +383,8 @@ async function viewMember(memberId) {
         </div>
 
         <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;justify-content:center;">
-            ${photo
-                ? `<img src="${photo}" style="width:120px;height:144px;object-fit:cover;border-radius:8px;border:2px solid var(--saffron);" alt="${escapeHtml(member.name || '')}">`
+            ${safePhoto
+                ? `<img src="${safePhoto}" style="width:120px;height:144px;object-fit:cover;border-radius:8px;border:2px solid var(--saffron);" alt="${escapeHtml(member.name || '')}">`
                 : '<div style="width:120px;height:144px;background:rgba(255,255,255,0.05);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--gray-500);">📷</div>'
             }
             <div style="flex:1;min-width:200px;">
@@ -245,10 +399,10 @@ async function viewMember(memberId) {
                     <tr><td style="padding:4px 0;color:var(--gray-400);">State</td>    <td style="padding:4px 0;color:var(--white);">${escapeHtml(member.state       || '—')}</td></tr>
                 </table>
                 <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;">
-                    <button class="btn-download png" style="padding:8px 16px;font-size:0.8rem;" onclick="downloadMemberCardPNG('${member.id}')">
+                    <button class="btn-download png" style="padding:8px 16px;font-size:0.8rem;" onclick="downloadMemberCardPNG('${escapeHtml(member.id)}')">
                         🖼️ PNG
                     </button>
-                    <button class="btn-download pdf" style="padding:8px 16px;font-size:0.8rem;" onclick="downloadMemberCardPDF('${member.id}')">
+                    <button class="btn-download pdf" style="padding:8px 16px;font-size:0.8rem;" onclick="downloadMemberCardPDF('${escapeHtml(member.id)}')">
                         📄 PDF
                     </button>
                 </div>
@@ -277,18 +431,25 @@ function exportCSV() {
     }
 
     const headers = ['#', 'Name', 'Father Name', 'DOB', 'Gender', 'Phone', 'Aadhaar', 'City', 'State', 'Membership No', 'Issuing Date'];
+
+    // Helper: wrap every field in quotes and escape internal quotes
+    function csvField(val) {
+        const str = String(val || '').replace(/"/g, '""');
+        return `"${str}"`;
+    }
+
     const rows = allMembers.map((m, i) => [
         i + 1,
-        `"${(m.name        || '').replace(/"/g, '""')}"`,
-        `"${(m.fatherName  || '').replace(/"/g, '""')}"`,
-        m.dob         || '',
-        m.gender      || '',
-        m.phone       || '',
-        m.aadhaar     || '',
-        m.city        || '',
-        m.state       || '',
-        m.membershipNo || '',
-        m.issuingDate  || ''
+        csvField(m.name),
+        csvField(m.fatherName),
+        csvField(m.dob),
+        csvField(m.gender),
+        csvField(m.phone),
+        csvField(m.aadhaar),
+        csvField(m.city),
+        csvField(m.state),
+        csvField(m.membershipNo),
+        csvField(m.issuingDate)
     ]);
 
     let csv = headers.join(',') + '\n';

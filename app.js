@@ -60,10 +60,6 @@ function formatDate(date) {
 
 // ─── Allowed-phone list ─────────────────────────────────────
 
-function getPhoneDigits(str) {
-    return (str || "").replace(/\D/g, "");
-}
-
 async function loadAllowedPhoneNumbers() {
     if (allowedPhoneNumbers) return allowedPhoneNumbers;
 
@@ -189,7 +185,7 @@ function attachPhotoUpload() {
         const reader = new FileReader();
         reader.onload = async function (ev) {
             try {
-                uploadedPhotoDataURL = await compressImage(ev.target.result, 600, 720, 0.92);
+                uploadedPhotoDataURL = await compressImage(ev.target.result, 350, 450, 0.60);
                 photoPreview.innerHTML = `<img src="${uploadedPhotoDataURL}" alt="Your Photo">`;
                 if (photoUploadArea) photoUploadArea.style.borderColor = 'var(--green)';
                 showToast('✅ फोटो अपलोड हो गई! Photo uploaded successfully.', 'success');
