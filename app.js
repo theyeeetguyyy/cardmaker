@@ -58,6 +58,18 @@ function formatDate(date) {
     return `${d}/${m}/${y}`;
 }
 
+function calculateAge(dobString) {
+    if (!dobString) return 0;
+    const today = new Date();
+    const birthDate = new Date(dobString);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    return age;
+}
+
 // ─── Allowed-phone list ─────────────────────────────────────
 
 async function loadAllowedPhoneNumbers() {
@@ -381,6 +393,15 @@ function attachFormSubmit() {
         const fatherName = document.getElementById('fatherName').value.trim();
         const dob        = document.getElementById('dob').value;
         const gender     = document.getElementById('gender').value;
+        
+        if (dob) {
+            const age = calculateAge(dob);
+            if (age < 18) {
+                showToast('आपकी उम्र 18 वर्ष से कम है, आप कार्ड नहीं बना सकते! You must be at least 18 years old.', 'error');
+                return;
+            }
+        }
+
         const aadhaarNo  = formatAadhaarInput(document.getElementById('aadhaarNo').value.trim());
         const phoneNo    = getPhoneDigits(document.getElementById('phoneNo').value.trim());
         const city       = document.getElementById('city').value.trim();
