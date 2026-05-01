@@ -270,7 +270,10 @@ async function deleteMember(id) {
         filterMembers();
     } catch (err) {
         console.error('Delete error:', err);
-        showToast('Error deleting member', 'error');
+        const msg = err.code === 'permission-denied'
+            ? '❌ Permission denied — check Firestore rules.'
+            : `❌ Delete failed: ${err.message}`;
+        showToast(msg, 'error');
     }
 }
 
