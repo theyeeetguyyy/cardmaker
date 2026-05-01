@@ -12,6 +12,10 @@ const ADMIN_EMAILS = [
 let allMembers = [];
 let lastVisibleDoc = null;
 let isLoadingMore = false;
+
+// Sort state
+let sortKey = 'createdAt';
+let sortDir = 'desc'; // 'asc' | 'desc'
 // toastEl and showToast are already defined in app.js (loaded before this file)
 
 // ─── Firebase Google Auth ────────────────────────────────────
@@ -102,28 +106,41 @@ async function showDashboard() {
 
     if (allMembers.length > 0) {
         renderTable(allMembers);
+        updateStats();
         return;
     }
-    loadServerStats(); // Run in parallel
     await loadMembers();
 }
 
-// --- Load Server Stats ---
-async function loadServerStats() {
-    try {
-        const totalSnap = await db.collection('members').count().get();
-        document.getElementById('statTotal').textContent = totalSnap.data().count;
+// --- Update Stats (computed from loaded allMembers) ---
+function updateStats() {
+    const total = allMembers.length;
+    document.getElementById('statTotal').textContent = total;
 
-        const today = new Date();
-        today.setHours(0,0,0,0);
-        const todaySnap = await db.collection('members').where('createdAt', '>=', today.toISOString()).count().get();
-        document.getElementById('statToday').textContent = todaySnap.data().count;
+    // Today count — createdAt is stored as ISO string e.g. "2026-05-01T..."
+    const todayPrefix = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+    const todayCount  = allMembers.filter(m => (m.createdAt || '').startsWith(todayPrefix)).length;
+    document.getElementById('statToday').textContent = todayCount;
 
-        // Distinct states check is too expensive for 50k users (requires 50k reads)
-        document.getElementById('statStates').textContent = '—';
-    } catch (e) {
-        console.warn('Error fetching server stats:', e);
-    }
+    // Unique states
+    const statesSet = new Set(allMembers.map(m => (m.state || '').trim()).filter(Boolean));
+    document.getElementById('statStates').textContent = statesSet.size;
+
+    // Populate state filter dropdown
+    populateStateFilter(statesSet);
+}
+
+function populateStateFilter(statesSet) {
+    const sel = document.getElementById('filterState');
+    if (!sel) return;
+    const current = sel.value;
+    sel.innerHTML = '<option value="">All States</option>';
+    [...statesSet].sort().forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s; opt.textContent = s;
+        if (s === current) opt.selected = true;
+        sel.appendChild(opt);
+    });
 }
 
 // --- Refresh ---
@@ -133,6 +150,13 @@ async function refreshMembers() {
     const btn = document.getElementById('btnRefresh');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span>';
+    // Reset filters
+    const si = document.getElementById('searchInput');
+    const fg = document.getElementById('filterGender');
+    const fs = document.getElementById('filterState');
+    if (si) si.value = '';
+    if (fg) fg.value = '';
+    if (fs) fs.value = '';
     await loadMembers();
     btn.disabled = false;
     btn.innerHTML = '🔄 Refresh';
@@ -143,13 +167,13 @@ async function refreshMembers() {
 async function loadMembers() {
     try {
         const snapshot = await db.collection('members').orderBy('createdAt', 'desc').limit(100).get();
-        if(!snapshot.empty) {
+        if (!snapshot.empty) {
             lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1];
         }
         allMembers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        renderTable(allMembers);
+        updateStats();
+        applyFiltersAndRender();
 
-        // Hide load more button if less than 100
         const loadMoreBtn = document.getElementById('btnLoadMore');
         if (loadMoreBtn) loadMoreBtn.style.display = snapshot.docs.length < 100 ? 'none' : 'block';
     } catch (err) {
@@ -173,13 +197,14 @@ async function loadMoreMembers() {
 
     try {
         const snapshot = await db.collection('members').orderBy('createdAt', 'desc').startAfter(lastVisibleDoc).limit(100).get();
-        if(!snapshot.empty) {
+        if (!snapshot.empty) {
             lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1];
             const newMembers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             allMembers = [...allMembers, ...newMembers];
-            renderTable(allMembers);
+            updateStats();
+            applyFiltersAndRender();
         }
-        
+
         if (btn) {
             btn.innerHTML = '🔽 Load More Members';
             btn.style.display = snapshot.docs.length < 100 ? 'none' : 'block';
@@ -191,12 +216,6 @@ async function loadMoreMembers() {
     } finally {
         isLoadingMore = false;
     }
-}
-
-// --- Stats ---
-// Disabled client side calculation to rely on loadServerStats
-function updateStats() {
-    loadServerStats();
 }
 
 // --- Render Table ---
@@ -267,7 +286,7 @@ async function deleteMember(id) {
         showToast('🗑️ Member deleted successfully', 'success');
         allMembers = allMembers.filter(m => m.id !== id);
         updateStats();
-        filterMembers();
+        applyFiltersAndRender();
     } catch (err) {
         console.error('Delete error:', err);
         const msg = err.code === 'permission-denied'
@@ -277,23 +296,66 @@ async function deleteMember(id) {
     }
 }
 
-// --- Filter / Search ---
-function filterMembers() {
-    const query = document.getElementById('searchInput').value.toLowerCase().trim();
-    if (!query) { renderTable(allMembers); return; }
-
-    renderTable(allMembers.filter(m =>
-        (m.name        && m.name.toLowerCase().includes(query))        ||
-        (m.phone       && m.phone.includes(query))                      ||
-        (m.city        && m.city.toLowerCase().includes(query))         ||
-        (m.state       && m.state.toLowerCase().includes(query))        ||
-        (m.membershipNo && m.membershipNo.toLowerCase().includes(query)) ||
-        (m.fatherName  && m.fatherName.toLowerCase().includes(query))   ||
-        (m.dob         && m.dob.includes(query))                        ||
-        (m.gender      && m.gender.toLowerCase().includes(query))       ||
-        (m.aadhaar     && m.aadhaar.includes(query))
-    ));
+// --- Sort by column header ---
+function sortBy(key) {
+    if (sortKey === key) {
+        sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortKey = key;
+        sortDir = 'asc';
+    }
+    updateSortIndicators();
+    applyFiltersAndRender();
 }
+
+function updateSortIndicators() {
+    document.querySelectorAll('.members-table th[data-sort]').forEach(th => {
+        th.classList.remove('sort-asc', 'sort-desc');
+        if (th.dataset.sort === sortKey) {
+            th.classList.add(sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+        }
+    });
+}
+
+// --- Apply filters + sort, then render ---
+function applyFiltersAndRender() {
+    const query  = (document.getElementById('searchInput')?.value  || '').toLowerCase().trim();
+    const gender = (document.getElementById('filterGender')?.value || '').toLowerCase();
+    const state  = (document.getElementById('filterState')?.value  || '').toLowerCase();
+
+    let filtered = allMembers.filter(m => {
+        if (gender && (m.gender || '').toLowerCase() !== gender) return false;
+        if (state  && (m.state  || '').toLowerCase() !== state)  return false;
+        if (query) {
+            return (
+                (m.name         && m.name.toLowerCase().includes(query))         ||
+                (m.phone        && m.phone.includes(query))                       ||
+                (m.city         && m.city.toLowerCase().includes(query))          ||
+                (m.state        && m.state.toLowerCase().includes(query))         ||
+                (m.membershipNo && m.membershipNo.toLowerCase().includes(query))  ||
+                (m.fatherName   && m.fatherName.toLowerCase().includes(query))    ||
+                (m.dob          && m.dob.includes(query))                         ||
+                (m.gender       && m.gender.toLowerCase().includes(query))        ||
+                (m.aadhaar      && m.aadhaar.includes(query))
+            );
+        }
+        return true;
+    });
+
+    // Sort
+    filtered.sort((a, b) => {
+        let av = (a[sortKey] || '').toLowerCase();
+        let bv = (b[sortKey] || '').toLowerCase();
+        if (av < bv) return sortDir === 'asc' ? -1 : 1;
+        if (av > bv) return sortDir === 'asc' ?  1 : -1;
+        return 0;
+    });
+
+    renderTable(filtered);
+}
+
+// Keep old name for inline oninput handlers
+function filterMembers() { applyFiltersAndRender(); }
 
 // --- Server DB Search ---
 async function searchDatabase() {
