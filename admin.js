@@ -6,7 +6,7 @@
 // ─── Admin Email Whitelist ───────────────────────────────────
 // Add more admin emails to this array to grant access
 const ADMIN_EMAILS = [
-    'astitvabandil@gmail.com', 'laxmisalesefl@gmail.com'
+    'astitvabandil@gmail.com', 'laxmisalesefl@gmail.com', 'prakashchandramandil@gmail.com'
 ];
 
 let allMembers = [];
