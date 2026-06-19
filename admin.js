@@ -621,3 +621,249 @@ function escapeHtml(str) {
     div.textContent = str;
     return div.innerHTML;
 }
+
+// ─── Progress overlay helpers ──────────────────────────────────────────────
+
+function showProgress(icon, title, msg) {
+    const el = document.getElementById('progressOverlay');
+    document.getElementById('progressIcon').textContent  = icon;
+    document.getElementById('progressTitle').textContent = title;
+    document.getElementById('progressMsg').textContent   = msg;
+    document.getElementById('progressBar').style.width   = '0%';
+    document.getElementById('progressCount').textContent = '';
+    el.style.display = 'flex';
+}
+
+function updateProgress(done, total, msg) {
+    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+    document.getElementById('progressBar').style.width   = pct + '%';
+    document.getElementById('progressCount').textContent = `${done} / ${total}`;
+    if (msg) document.getElementById('progressMsg').textContent = msg;
+}
+
+function hideProgress() {
+    document.getElementById('progressOverlay').style.display = 'none';
+}
+
+// ─── Full JSON Backup (Export All) ────────────────────────────────────────
+
+async function exportAllData() {
+    const btn = document.getElementById('btnExportAll');
+    const orig = btn.innerHTML;
+
+    try {
+        btn.disabled = true;
+        showProgress('📦', 'Fetching all members...', 'Please wait, do not close this tab.');
+
+        // ── Step 1: Paginate through ALL members (no 100-limit) ──
+        let allDocs = [];
+        let lastDoc = null;
+
+        while (true) {
+            let q = db.collection('members').orderBy('createdAt', 'desc').limit(500);
+            if (lastDoc) q = q.startAfter(lastDoc);
+            const snap = await q.get();
+            if (snap.empty) break;
+            allDocs = allDocs.concat(snap.docs);
+            lastDoc = snap.docs[snap.docs.length - 1];
+            updateProgress(allDocs.length, allDocs.length, `Fetched ${allDocs.length} members...`);
+            if (snap.docs.length < 500) break;
+        }
+
+        const total = allDocs.length;
+        if (total === 0) {
+            hideProgress();
+            showToast('No members found to export.', 'error');
+            return;
+        }
+
+        // ── Step 2: Load photos in parallel batches of 50 ──
+        showProgress('📷', 'Loading photos...', `0 / ${total} photos loaded`);
+        const members = [];
+        const PHOTO_BATCH = 50;
+
+        for (let i = 0; i < allDocs.length; i += PHOTO_BATCH) {
+            const chunk = allDocs.slice(i, i + PHOTO_BATCH);
+
+            const photos = await Promise.all(
+                chunk.map(doc =>
+                    db.collection('memberPhotos').doc(doc.id).get()
+                        .then(ps => (ps.exists ? ps.data().photo : null))
+                        .catch(() => null)
+                )
+            );
+
+            chunk.forEach((doc, j) => {
+                const data = doc.data();
+                // _id is stored separately so restore can use exact Firestore doc IDs
+                members.push({ _id: doc.id, ...data, photo: photos[j] || null });
+            });
+
+            updateProgress(Math.min(i + PHOTO_BATCH, total), total,
+                `${Math.min(i + PHOTO_BATCH, total)} / ${total} photos loaded`);
+        }
+
+        // ── Step 3: Bundle and download ──
+        updateProgress(total, total, 'Packaging file...');
+
+        const payload = {
+            version:    2,
+            exportedAt: new Date().toISOString(),
+            exportedBy: auth?.currentUser?.email || 'admin',
+            count:      members.length,
+            members
+        };
+
+        const json = JSON.stringify(payload);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = `ABMGVM_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        hideProgress();
+        showToast(`✅ Backup complete — ${members.length} members exported!`, 'success');
+
+    } catch (err) {
+        console.error('Export error:', err);
+        hideProgress();
+        showToast(`❌ Backup failed: ${err.message}`, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = orig;
+    }
+}
+
+// ─── Full JSON Restore (Import All) ───────────────────────────────────────
+
+function triggerImport() {
+    document.getElementById('importFileInput').click();
+}
+
+async function handleImportFile(e) {
+    const file = e.target.files[0];
+    e.target.value = ''; // reset so same file can re-trigger
+    if (!file) return;
+
+    // ── Parse file ──
+    let payload;
+    try {
+        payload = JSON.parse(await file.text());
+    } catch {
+        showToast('❌ Could not parse file. Make sure it is a valid ABMGVM backup JSON.', 'error');
+        return;
+    }
+
+    if (!payload.members || !Array.isArray(payload.members) || payload.members.length === 0) {
+        showToast('❌ Invalid backup file — no members array found.', 'error');
+        return;
+    }
+
+    const count      = payload.members.length;
+    const exportDate = payload.exportedAt ? new Date(payload.exportedAt).toLocaleString('en-IN') : 'unknown date';
+
+    // ── Confirm ──
+    const confirmed = confirm(
+        `📥 Restore Backup\n\n` +
+        `File: ${file.name}\n` +
+        `Members: ${count}\n` +
+        `Backup date: ${exportDate}\n\n` +
+        `⚠️ Existing records with matching IDs will be OVERWRITTEN.\n` +
+        `New records will be ADDED.\n\n` +
+        `Proceed?`
+    );
+    if (!confirmed) return;
+
+    const btn  = document.getElementById('btnImport');
+    const orig = btn.innerHTML;
+
+    try {
+        btn.disabled = true;
+        showProgress('📥', 'Restoring backup...', 'Writing members to database...');
+
+        // ── Batch write in chunks of 200 (= 400 Firestore ops, under 500 limit) ──
+        const CHUNK      = 200;
+        let   imported   = 0;
+        let   maxCounter = 0;
+
+        for (let i = 0; i < payload.members.length; i += CHUNK) {
+            const chunk = payload.members.slice(i, i + CHUNK);
+            const batch = db.batch();
+
+            chunk.forEach(m => {
+                const { _id, photo, ...meta } = m;
+
+                // Resolve doc ID — use stored _id if valid, else generate new
+                const docId = (typeof _id === 'string' && _id.length > 0)
+                    ? _id
+                    : db.collection('members').doc().id;
+
+                // Track highest membership number for counter sync
+                if (meta.membershipNo) {
+                    const num = parseInt((meta.membershipNo || '').replace(/\D/g, ''), 10);
+                    if (!isNaN(num) && num > maxCounter) maxCounter = num;
+                }
+
+                // Write member metadata (set = create-or-overwrite)
+                batch.set(db.collection('members').doc(docId), {
+                    name:         meta.name         || '',
+                    fatherName:   meta.fatherName   || '',
+                    dob:          meta.dob          || '',
+                    gender:       meta.gender       || '',
+                    aadhaar:      meta.aadhaar      || '',
+                    phone:        meta.phone        || '',
+                    city:         meta.city         || '',
+                    state:        meta.state        || '',
+                    membershipNo: meta.membershipNo || '',
+                    issuingDate:  meta.issuingDate  || '',
+                    createdAt:    meta.createdAt    || new Date().toISOString(),
+                    ...(meta.updatedAt ? { updatedAt: meta.updatedAt } : {})
+                });
+
+                // Write photo separately (null-safe)
+                batch.set(db.collection('memberPhotos').doc(docId), {
+                    photo: (typeof photo === 'string' && photo.startsWith('data:')) ? photo : null
+                });
+            });
+
+            await batch.commit();
+            imported += chunk.length;
+            updateProgress(imported, count, `${imported} / ${count} members written...`);
+        }
+
+        // ── Sync membership counter ──
+        if (maxCounter > 0) {
+            try {
+                const counterRef  = db.collection('meta').doc('counter');
+                const counterSnap = await counterRef.get();
+                const currentVal  = counterSnap.exists ? (counterSnap.data().value || 0) : 0;
+                if (maxCounter > currentVal) {
+                    await counterRef.set({ value: maxCounter });
+                    console.log(`Counter synced to ${maxCounter}`);
+                }
+            } catch (counterErr) {
+                console.warn('Counter sync failed (non-fatal):', counterErr);
+            }
+        }
+
+        updateProgress(count, count, 'Done! Refreshing table...');
+
+        // ── Reload table ──
+        allMembers    = [];
+        lastVisibleDoc = null;
+        await loadMembers();
+
+        hideProgress();
+        showToast(`✅ Restore complete — ${imported} members imported!`, 'success');
+
+    } catch (err) {
+        console.error('Import error:', err);
+        hideProgress();
+        showToast(`❌ Restore failed: ${err.message}`, 'error');
+    } finally {
+        btn.disabled  = false;
+        btn.innerHTML = orig;
+    }
+}

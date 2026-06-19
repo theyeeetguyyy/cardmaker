@@ -21,24 +21,27 @@ service cloud.firestore {
     match /members/{id} {
       allow read: if true;
 
-      // Allow create with required fields and correct types
+      // Allow create: admins bypass all validation; public users must pass field checks
       allow create: if
-        request.resource.data.keys().hasAll([
-          'name', 'fatherName', 'dob', 'gender', 'aadhaar',
-          'phone', 'city', 'state', 'membershipNo', 'issuingDate', 'createdAt'
-        ])
-        && request.resource.data.name is string
-        && request.resource.data.name.size() > 0
-        && request.resource.data.name.size() <= 100
-        && request.resource.data.fatherName is string
-        && request.resource.data.phone is string
-        && request.resource.data.phone.size() == 10
-        && request.resource.data.aadhaar is string
-        && request.resource.data.aadhaar.size() == 14
-        && request.resource.data.gender in ['Male', 'Female', 'Other']
-        && request.resource.data.membershipNo is string
-        && request.resource.data.keys().size() <= 12
-        && request.resource.size() <= 5000;
+        isAdmin()
+        || (
+          request.resource.data.keys().hasAll([
+            'name', 'fatherName', 'dob', 'gender', 'aadhaar',
+            'phone', 'city', 'state', 'membershipNo', 'issuingDate', 'createdAt'
+          ])
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 100
+          && request.resource.data.fatherName is string
+          && request.resource.data.phone is string
+          && request.resource.data.phone.size() == 10
+          && request.resource.data.aadhaar is string
+          && request.resource.data.aadhaar.size() == 14
+          && request.resource.data.gender in ['Male', 'Female', 'Other']
+          && request.resource.data.membershipNo is string
+          && request.resource.data.keys().size() <= 13
+          && request.resource.size() <= 5000
+        );
 
       // Admins can update freely; public users can update with validation
       // (needed for "Find Card → Edit → Update" flow on index.html)

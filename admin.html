@@ -58,7 +58,10 @@
                     </p>
                 </div>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <button class="btn-export" id="btnExport" onclick="exportCSV()">📥 Export CSV</button>
+                    <button class="btn-export" id="btnExport" onclick="exportCSV()">📄 Export CSV</button>
+                    <button class="btn-export" id="btnExportAll" onclick="exportAllData()" style="background:rgba(46,184,208,0.15);border-color:rgba(46,184,208,0.4);color:#2eb8d0;">📦 Backup JSON</button>
+                    <button class="btn-export" id="btnImport" onclick="triggerImport()" style="background:rgba(56,189,120,0.15);border-color:rgba(56,189,120,0.4);color:#38bd78;">📥 Restore JSON</button>
+                    <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="handleImportFile(event)">
                     <button class="btn-export" id="btnRefresh" onclick="refreshMembers()">🔄 Refresh</button>
                     <a href="index.html" style="text-decoration: none;">
                         <button class="btn-export">🏠 Home</button>
@@ -161,8 +164,25 @@
     <!-- Toast notification -->
     <div class="toast" id="toast"></div>
 
+    <!-- Import/Export Progress Overlay -->
+    <div id="progressOverlay" style="
+        display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;
+        align-items:center;justify-content:center;flex-direction:column;gap:20px;
+    ">
+        <div style="background:#1a2d5a;border:1px solid rgba(255,255,255,0.15);border-radius:16px;
+                    padding:36px 48px;text-align:center;max-width:420px;width:90%;">
+            <div style="font-size:2.5rem;margin-bottom:12px" id="progressIcon">📦</div>
+            <div style="color:#fff;font-size:1.1rem;font-weight:700;margin-bottom:8px" id="progressTitle">Processing...</div>
+            <div style="color:rgba(255,255,255,0.6);font-size:0.9rem;margin-bottom:20px" id="progressMsg">Please wait, do not close this tab.</div>
+            <div style="background:rgba(255,255,255,0.1);border-radius:100px;height:8px;overflow:hidden;">
+                <div id="progressBar" style="height:100%;background:linear-gradient(90deg,#2eb8d0,#38bd78);border-radius:100px;transition:width 0.3s;width:0%"></div>
+            </div>
+            <div style="color:rgba(255,255,255,0.5);font-size:0.8rem;margin-top:10px" id="progressCount">0 / 0</div>
+        </div>
+    </div>
+
     <script src="firebase-config.js"></script>
     <script src="app.js?v=7.1"></script>
-    <script src="admin.js?v=3.1"></script>
+    <script src="admin.js?v=4.0"></script>
 </body>
 </html>
