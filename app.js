@@ -11,6 +11,8 @@ let currentFirebaseKey = null;
 let isEditMode = false;
 let allowedPhoneNumbers = null;
 let allowedPhoneNumbersPromise = null;
+let singlePhoneNumbers = null;
+let singlePhoneNumbersPromise = null;
 
 // FIX: Was triple-backtick (```text```) which is a fatal JS syntax error.
 const DEFAULT_PHONE_ACCESS_ERROR = `नमस्कार, प्रिय समाज बंधु, कृपया पहले अपना जनगणना फॉर्म भरें, उसके बाद अपना मतदान कार्ड प्राप्त करें। धन्यवाद 🙏`;
@@ -70,53 +72,73 @@ function calculateAge(dobString) {
     return age;
 }
 
-// ─── Allowed-phone list ─────────────────────────────────────
+// ─── Allowed-phone lists ─────────────────────────────────────
+// numbers.csv      → up to 2 cards per phone (1 male + 1 female)
+// singlenumbers.csv → only 1 card per phone (strict, any gender)
+
+function _parseCsvToSet(csvText) {
+    const numbers = new Set();
+    csvText
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(Boolean)
+        .forEach(line => {
+            const digits = getPhoneDigits(line);
+            if (digits.length === 10) numbers.add(digits);
+        });
+    return numbers;
+}
 
 async function loadAllowedPhoneNumbers() {
     if (allowedPhoneNumbers) return allowedPhoneNumbers;
-
     if (!allowedPhoneNumbersPromise) {
-        allowedPhoneNumbersPromise = fetch(`numbers.csv?v=${Date.now()}`, {
-            cache: "no-store"
-        })
-        .then(res => {
-            if (!res.ok) {
-                throw new Error(`Failed to load numbers.csv (${res.status})`);
-            }
-            return res.text();
-        })
-        .then(csvText => {
-            const numbers = new Set();
-
-            csvText
-                .split(/\r?\n/)
-                .map(line => line.trim())
-                .filter(Boolean)
-                .forEach(line => {
-                    const digits = getPhoneDigits(line);
-                    if (digits.length === 10) {
-                        numbers.add(digits);
-                    }
-                });
-
-            allowedPhoneNumbers = numbers;
-            allowedPhoneNumbersPromise = null;
-
-            return numbers;
-        })
-        .catch(err => {
-            allowedPhoneNumbersPromise = null;
-            throw err;
-        });
+        allowedPhoneNumbersPromise = fetch(`numbers.csv?v=${Date.now()}`, { cache: 'no-store' })
+            .then(res => {
+                if (!res.ok) throw new Error(`Failed to load numbers.csv (${res.status})`);
+                return res.text();
+            })
+            .then(csvText => {
+                allowedPhoneNumbers = _parseCsvToSet(csvText);
+                allowedPhoneNumbersPromise = null;
+                return allowedPhoneNumbers;
+            })
+            .catch(err => { allowedPhoneNumbersPromise = null; throw err; });
     }
-
     return allowedPhoneNumbersPromise;
 }
 
-    
+async function loadSinglePhoneNumbers() {
+    if (singlePhoneNumbers) return singlePhoneNumbers;
+    if (!singlePhoneNumbersPromise) {
+        singlePhoneNumbersPromise = fetch(`singlenumbers.csv?v=${Date.now()}`, { cache: 'no-store' })
+            .then(res => {
+                if (!res.ok) throw new Error(`Failed to load singlenumbers.csv (${res.status})`);
+                return res.text();
+            })
+            .then(csvText => {
+                singlePhoneNumbers = _parseCsvToSet(csvText);
+                singlePhoneNumbersPromise = null;
+                return singlePhoneNumbers;
+            })
+            .catch(err => { singlePhoneNumbersPromise = null; throw err; });
+    }
+    return singlePhoneNumbersPromise;
+}
+
+/**
+ * Returns:
+ *   'single' — phone is in singlenumbers.csv → max 1 card allowed
+ *   'double' — phone is in numbers.csv       → max 2 cards allowed (male + female)
+ *   false    — phone is in neither list      → access denied
+ */
 async function ensurePhoneIsAllowed(phoneNo) {
-    const numbers = await loadAllowedPhoneNumbers();
-    return numbers.has(phoneNo);
+    const [singleNums, doubleNums] = await Promise.all([
+        loadSinglePhoneNumbers(),
+        loadAllowedPhoneNumbers()
+    ]);
+    if (singleNums.has(phoneNo)) return 'single';
+    if (doubleNums.has(phoneNo)) return 'double';
+    return false;
 }
 
 // ─── Modals ─────────────────────────────────────────────────
@@ -225,8 +247,9 @@ function attachPhotoUpload() {
 
 // ─── Duplicate Check ─────────────────────────────────────────
 
-// Returns: null | 'aadhaar' | 'phone_same_gender' | 'phone_both_genders'
-async function checkDuplicate(aadhaarNo, phoneNo, currentGender, previousData = null) {
+// Returns: null | 'aadhaar' | 'phone_same_gender' | 'phone_both_genders' | 'phone_single_limit'
+// phoneListType: 'single' (max 1 card) | 'double' (max 2 cards, male+female)
+async function checkDuplicate(aadhaarNo, phoneNo, currentGender, previousData = null, phoneListType = 'double') {
     try {
         const shouldCheckAadhaar = !previousData || (previousData.aadhaar || '') !== aadhaarNo;
         const shouldCheckPhone   = !previousData || getPhoneDigits(previousData.phone) !== getPhoneDigits(phoneNo);
@@ -252,11 +275,14 @@ async function checkDuplicate(aadhaarNo, phoneNo, currentGender, previousData = 
 
                 if (otherDocs.length === 0) {
                     // No other cards with this phone — allow
+                } else if (phoneListType === 'single') {
+                    // singlenumbers.csv: only 1 card allowed per phone, period
+                    return 'phone_single_limit';
                 } else if (otherDocs.length >= 2) {
-                    // Both male and female cards already exist
+                    // numbers.csv: both male and female cards already exist
                     return 'phone_both_genders';
                 } else {
-                    // Exactly 1 other card exists — check gender clash
+                    // numbers.csv: exactly 1 other card — check gender clash
                     const existingGender = (otherDocs[0].data().gender || '').toLowerCase();
                     const incomingGender = (currentGender || '').toLowerCase();
                     if (existingGender === incomingGender) {
@@ -343,14 +369,14 @@ async function submitFindCard(e) {
 
         await populateCard(currentMemberData);
 
-        document.getElementById('memberName').value  = currentMemberData.name        || '';
-        document.getElementById('fatherName').value  = currentMemberData.fatherName  || '';
-        document.getElementById('dob').value         = currentMemberData.dob         || '';
-        document.getElementById('gender').value      = currentMemberData.gender      || '';
-        document.getElementById('aadhaarNo').value   = currentMemberData.aadhaar     || '';
-        document.getElementById('phoneNo').value     = currentMemberData.phone       || '';
-        document.getElementById('city').value        = currentMemberData.city        || '';
-        document.getElementById('state').value       = currentMemberData.state       || '';
+        document.getElementById('memberName').value  = currentMemberData.name                                      || '';
+        document.getElementById('fatherName').value  = currentMemberData.fatherName                                || '';
+        document.getElementById('dob').value         = currentMemberData.dob                                       || '';
+        document.getElementById('gender').value      = currentMemberData.gender                                    || '';
+        document.getElementById('aadhaarNo').value   = currentMemberData.aadhaar                                   || '';
+        document.getElementById('phoneNo').value     = normalizeIndianPhone(currentMemberData.phone               || '');
+        document.getElementById('city').value        = currentMemberData.city                                      || '';
+        document.getElementById('state').value       = currentMemberData.state                                     || '';
 
         uploadedPhotoDataURL = currentMemberData.photo;
         if (photoPreview) {
@@ -419,16 +445,16 @@ function attachFormSubmit() {
         document.getElementById('aadhaarNo').value = aadhaarNo;
         document.getElementById('phoneNo').value   = phoneNo;
 
-        let isAllowedPhone = false;
+        let phoneListType = false;
         try {
-            isAllowedPhone = await ensurePhoneIsAllowed(phoneNo);
+            phoneListType = await ensurePhoneIsAllowed(phoneNo);
         } catch (err) {
             console.error('Allowed phone list load failed:', err);
             showToast('फोन सूची लोड नहीं हो पाई! Could not load the approved phone list.', 'error');
             return;
         }
 
-        if (!isAllowedPhone) {
+        if (!phoneListType) {
             openErrorModal(DEFAULT_PHONE_ACCESS_ERROR);
             return;
         }
@@ -439,9 +465,13 @@ function attachFormSubmit() {
         try {
             const previousData = isEditMode && originalMemberData ? { ...originalMemberData } : null;
 
-            const duplicate = await checkDuplicate(aadhaarNo, phoneNo, gender, previousData);
+            const duplicate = await checkDuplicate(aadhaarNo, phoneNo, gender, previousData, phoneListType);
             if (duplicate === 'aadhaar') {
                 showToast('❌ इस आधार नंबर से पहले ही कार्ड बन चुका है!', 'error');
+                return;
+            }
+            if (duplicate === 'phone_single_limit') {
+                showToast('❌ इस फोन नंबर से पहले ही एक कार्ड बन चुका है! Only 1 card is allowed per phone number.', 'error');
                 return;
             }
             if (duplicate === 'phone_same_gender') {
@@ -516,14 +546,14 @@ function editCard() {
     if (!currentMemberData) return;
     isEditMode = true;
 
-    document.getElementById('memberName').value  = currentMemberData.name        || '';
-    document.getElementById('fatherName').value  = currentMemberData.fatherName  || '';
-    document.getElementById('dob').value         = currentMemberData.dob         || '';
-    document.getElementById('gender').value      = currentMemberData.gender      || '';
-    document.getElementById('aadhaarNo').value   = currentMemberData.aadhaar     || '';
-    document.getElementById('phoneNo').value     = currentMemberData.phone       || '';
-    document.getElementById('city').value        = currentMemberData.city        || '';
-    document.getElementById('state').value       = currentMemberData.state       || '';
+    document.getElementById('memberName').value  = currentMemberData.name                                   || '';
+    document.getElementById('fatherName').value  = currentMemberData.fatherName                             || '';
+    document.getElementById('dob').value         = currentMemberData.dob                                    || '';
+    document.getElementById('gender').value      = currentMemberData.gender                                  || '';
+    document.getElementById('aadhaarNo').value   = currentMemberData.aadhaar                                || '';
+    document.getElementById('phoneNo').value     = normalizeIndianPhone(currentMemberData.phone            || '');
+    document.getElementById('city').value        = currentMemberData.city                                   || '';
+    document.getElementById('state').value       = currentMemberData.state                                  || '';
 
     uploadedPhotoDataURL = currentMemberData.photo;
     if (photoPreview) {
@@ -1194,8 +1224,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const errorModal = document.getElementById('errorModal');
     if (errorModal) errorModal.addEventListener('click', e => { if (e.target === errorModal) closeErrorModal(); });
 
-    // Pre-warm the phone list in background
+    // Pre-warm both phone lists in background
     loadAllowedPhoneNumbers().catch(err => console.warn('Could not preload numbers.csv:', err));
+    loadSinglePhoneNumbers().catch(err => console.warn('Could not preload singlenumbers.csv:', err));
 
     // Handle ?edit=ID URL param (admin redirect)
     const urlParams = new URLSearchParams(window.location.search);
