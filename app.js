@@ -73,8 +73,8 @@ function calculateAge(dobString) {
 }
 
 // ─── Allowed-phone lists ─────────────────────────────────────
-// numbers.csv      → up to 2 cards per phone (1 male + 1 female)
-// singlenumbers.csv → only 1 card per phone (strict, any gender)
+// numbers.csv / singlenumbers.csv → both grant up to 2 cards per phone (1 male + 1 female)
+// Both lists now just gate access; the single-card cap is no longer enforced.
 
 function _parseCsvToSet(csvText) {
     const numbers = new Set();
@@ -127,17 +127,15 @@ async function loadSinglePhoneNumbers() {
 
 /**
  * Returns:
- *   'single' — phone is in singlenumbers.csv → max 1 card allowed
- *   'double' — phone is in numbers.csv       → max 2 cards allowed (male + female)
- *   false    — phone is in neither list      → access denied
+ *   'double' — phone is in numbers.csv or singlenumbers.csv → max 2 cards allowed (male + female)
+ *   false    — phone is in neither list                     → access denied
  */
 async function ensurePhoneIsAllowed(phoneNo) {
     const [singleNums, doubleNums] = await Promise.all([
         loadSinglePhoneNumbers(),
         loadAllowedPhoneNumbers()
     ]);
-    if (singleNums.has(phoneNo)) return 'single';
-    if (doubleNums.has(phoneNo)) return 'double';
+    if (singleNums.has(phoneNo) || doubleNums.has(phoneNo)) return 'double';
     return false;
 }
 
