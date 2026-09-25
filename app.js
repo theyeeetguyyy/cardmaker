@@ -125,12 +125,21 @@ async function loadSinglePhoneNumbers() {
     return singlePhoneNumbersPromise;
 }
 
+// ─── Master phone numbers (unlimited card creation) ──────────
+// These numbers bypass ALL limits. Any number of cards can be
+// created using a master number.
+const MASTER_PHONE_NUMBERS = new Set([
+    '6261507117'   // +91 62615 07117
+]);
+
 /**
  * Returns:
+ *   'master' — phone is a master number → unlimited cards, no restrictions
  *   'double' — phone is in numbers.csv or singlenumbers.csv → max 2 cards allowed (male + female)
  *   false    — phone is in neither list                     → access denied
  */
 async function ensurePhoneIsAllowed(phoneNo) {
+    if (MASTER_PHONE_NUMBERS.has(phoneNo)) return 'master';
     const [singleNums, doubleNums] = await Promise.all([
         loadSinglePhoneNumbers(),
         loadAllowedPhoneNumbers()
@@ -246,7 +255,7 @@ function attachPhotoUpload() {
 // ─── Duplicate Check ─────────────────────────────────────────
 
 // Returns: null | 'aadhaar' | 'phone_same_gender' | 'phone_both_genders' | 'phone_single_limit'
-// phoneListType: 'single' (max 1 card) | 'double' (max 2 cards, male+female)
+// phoneListType: 'master' (unlimited) | 'single' (max 1 card) | 'double' (max 2 cards, male+female)
 async function checkDuplicate(aadhaarNo, phoneNo, currentGender, previousData = null, phoneListType = 'double') {
     try {
         const shouldCheckAadhaar = !previousData || (previousData.aadhaar || '') !== aadhaarNo;
@@ -262,6 +271,9 @@ async function checkDuplicate(aadhaarNo, phoneNo, currentGender, previousData = 
                 }
             }
         }
+
+        // Master numbers are exempt from ALL phone-based duplicate limits
+        if (phoneListType === 'master') return null;
 
         if (shouldCheckPhone) {
             const snap = await db.collection('members').where('phone', '==', phoneNo).get();
